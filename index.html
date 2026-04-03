@@ -1,1 +1,2804 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ShogiCalc.</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Roboto', sans-serif;
+        }
+
+body {
+    background: #f0f2f8;
+    min-height: 100vh;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+        
+        .global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s ease, opacity 0.2s ease;
+        }
+        
+        .global-loader.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .loader-circle {
+            width: 70px;
+            height: 70px;
+            border: 6px solid rgba(255, 255, 255, 0.2);
+            border-top: 6px solid #ffffff;
+            border-right: 6px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+.main-header {
+    padding: 15px 0 10px 0;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+.main-header h1 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #1f6e8c;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+}
+
+.main-header h1 i {
+    color: #1f6e8c;
+    margin-right: 8px;
+}
+
+.main-header p {
+    font-size: 0.8rem;
+    color: #5a6e7c;
+    margin-top: 5px;
+    opacity: 0.85;
+}
+        
+        .login-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #e9eff7 0%, #d4e0ec 100%);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .login-page::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotateBg 30s linear infinite;
+        }
+        
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 40px 35px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 35px 65px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.3);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            animation: slideUpLogin 0.5s ease-out;
+        }
+        
+        @keyframes slideUpLogin {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo-container {
+            margin-bottom: 30px;
+        }
+        
+        .logo-circle {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #1f6e8c, #0e4e6b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 15px 30px rgba(31, 110, 140, 0.3);
+        }
+        
+        .logo-circle i {
+            font-size: 42px;
+            color: white;
+        }
+        
+        .login-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1f6e8c, #0e4e6b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .login-subtitle {
+            color: #6c7a89;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group-modern {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            margin-top: 5px;
+        }
+        
+        .input-wrapper i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #1f6e8c;
+            font-size: 18px;
+            z-index: 2;
+        }
+        
+        .input-modern {
+            width: 100%;
+            padding: 16px 20px 16px 52px;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .input-modern:focus {
+            border-color: #1f6e8c;
+            box-shadow: 0 0 0 4px rgba(31, 110, 140, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .input-modern::placeholder {
+            color: #a0aec0;
+        }
+        
+        .btn-modern {
+            background: linear-gradient(95deg, #1f6e8c, #0e4e6b);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            width: 100%;
+            margin-top: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 8px 20px rgba(31, 110, 140, 0.3);
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(31, 110, 140, 0.4);
+        }
+        
+        .btn-modern:active {
+            transform: translateY(0px);
+        }
+        
+        .error-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+            20%, 40%, 60%, 80% { transform: translateX(6px); }
+        }
+        
+.main-container {
+    display: none;
+    width: calc(100% - 1cm);
+    margin-left: 0.5cm;
+    margin-right: 0.5cm;
+    max-width: none;
+}
+        
+.logout-btn {
+    position: fixed;
+    top: 20px;
+    right: calc(0.5cm + 10px);
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 14px;
+    z-index: 1000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(231, 76, 60, 0.3);
+    transition: all 0.3s ease;
+}
+        
+        .logout-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+        
+.content {
+    padding: 25px 0;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+}
+        
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 8px 20px;
+    border-radius: 80px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+        
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            background: #f8fafc;
+            padding: 8px 22px;
+            border-radius: 60px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 2px 5px rgba(0,0,0,0.02);
+        }
+        
+        .nav-arrow {
+            background: white;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #1f6e8c;
+            transition: all 0.2s ease;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .nav-arrow:hover {
+            background: #1f6e8c;
+            color: white;
+            transform: scale(1.08);
+            box-shadow: 0 6px 12px rgba(31, 110, 140, 0.25);
+        }
+        
+        .nav-arrow:active {
+            transform: scale(0.98);
+        }
+        
+        .current-month-display {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0c4e6e;
+            min-width: 220px;
+            text-align: center;
+            letter-spacing: -0.3px;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        
+        .enhanced-control-btn {
+            background: #1f6e8c;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .enhanced-control-btn-success {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+        }
+        
+        .enhanced-control-btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .enhanced-control-btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        
+        .enhanced-control-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.05);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+        }
+        
+        .enhanced-control-btn:active {
+            transform: translateY(0px);
+        }
+        
+.earning-panel {
+    background: linear-gradient(135deg, #1f6e8c 0%, #0a5c78 100%);
+    padding: 25px 20px;
+    border-radius: 40px;
+    color: white;
+    text-align: center;
+    margin-bottom: 28px;
+    box-shadow: 0 12px 28px rgba(31, 110, 140, 0.25);
+    width: 100%;
+}
+        
+        .earning-panel div:first-child {
+            font-size: 15px;
+            opacity: 0.9;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .total-earning {
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .expected-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 6px;
+        }
+
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+table {
+    min-width: 100%;
+    width: 100%;
+}
+
+td, th {
+    white-space: nowrap;
+    padding: 8px 12px;
+}
+
+.type-header {
+    position: sticky;
+    left: 0;
+    background: #e9f0f5;
+    z-index: 20;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+        
+        .date-header {
+            background: #2c3e50;
+            color: white;
+            font-weight: 700;
+            min-width: 55px;
+        }
+        
+        .shift-cell {
+            background-color: #2b7a4b !important;
+            transition: all 0.15s ease;
+        }
+        
+        .shift-cell input {
+            background-color: #2b7a4b !important;
+            color: white !important;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        }
+        
+        .shift-cell input:focus {
+            background-color: #1e5a38 !important;
+            border-color: white !important;
+            outline: none;
+        }
+        
+        .table-input {
+            width: 75px;
+            padding: 10px 6px;
+            text-align: center;
+            border-radius: 20px;
+            border: 1.5px solid #cbd5e1;
+            font-weight: 600;
+            font-size: 14px;
+            background: white;
+            transition: all 0.2s ease;
+            color: #1e2a3e;
+        }
+        
+        .table-input:focus {
+            border-color: #1f6e8c;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(31, 110, 140, 0.2);
+            transform: scale(1.02);
+        }
+        
+        .table-input::-webkit-inner-spin-button,
+        .table-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .table-input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        
+        .table-input.empty-input {
+            color: #666;
+        }
+        
+        .extras-row {
+            background: #f8f9fe;
+            font-size: 12px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 1500;
+            align-items: center;
+            justify-content: center;
+        }
+        
+.modal-content {
+    background: white;
+    border-radius: 40px;
+    width: calc(100% - 1cm);
+    max-width: calc(100% - 1cm);
+    margin: 0 auto;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 30px;
+    box-shadow: 0 30px 50px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+#otherMonthsModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#otherMonthsModal #monthsContainer {
+    overflow-y: auto;
+    max-height: calc(85vh - 250px);
+    padding-right: 10px;
+    margin-top: 10px;
+}
+
+#otherMonthsModal .stats-grid {
+    flex-shrink: 0;
+}
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        @keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#otherMonthsModal {
+    align-items: flex-start !important;
+    padding-top: 0.5cm;
+    padding-bottom: 0.5cm;
+    box-sizing: border-box;
+}
+
+#otherMonthsModal .modal-content {
+    height: calc(100vh - 1cm);
+    max-height: calc(100vh - 1cm);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#otherMonthsModal .modal-header {
+    flex-shrink: 0;
+}
+
+#otherMonthsModal #globalStats {
+    flex-shrink: 0;
+}
+
+#otherMonthsModal #monthsContainer {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eef2f6;
+            padding-bottom: 18px;
+            margin-bottom: 25px;
+        }
+        
+        .modal-header h3 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1e2a3e;
+        }
+        
+        .modal-header button {
+            background: #f0f2f5;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            color: #666;
+        }
+        
+        .modal-header button:hover {
+            background: #e74c3c;
+            color: white;
+            transform: rotate(90deg);
+        }
+        
+.dates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 14px;
+    background: #f9fbfd;
+    padding: 25px;
+    border-radius: 32px;
+    margin: 20px 0;
+    max-height: 320px;
+    overflow-y: auto;
+    width: 100%;
+}
+        
+        .date-cell-select {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            padding: 12px 0;
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .date-cell-select:hover {
+            border-color: #1f6e8c;
+            transform: scale(1.05);
+            background: #e6f7ff;
+        }
+        
+        .date-cell-select.selected {
+            background: #2b7a4b;
+            color: white;
+            border-color: #2b7a4b;
+            box-shadow: 0 4px 12px rgba(43, 122, 75, 0.3);
+        }
+        
+        .insurance-check {
+            background: #fff8e7;
+            padding: 14px 22px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 12px 0;
+            border: 1px solid #ffe2b5;
+        }
+        
+        .fitpass-check {
+            background: #e8f0fe;
+            padding: 14px 22px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 12px 0;
+            border: 1px solid #bdd4ff;
+        }
+        
+        .insurance-check label, .fitpass-check label {
+            font-weight: 700;
+            color: #2d3748;
+            cursor: pointer;
+        }
+        
+        .insurance-check input, .fitpass-check input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .enhanced-btn {
+            padding: 14px 28px;
+            border-radius: 60px;
+            border: none;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .enhanced-btn-success {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+            color: white;
+        }
+        
+        .enhanced-btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .enhanced-btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .enhanced-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .warning-text {
+            color: #c0392b;
+            font-weight: bold;
+            margin-bottom: 16px;
+            background: #ffe6e6;
+            padding: 14px 18px;
+            border-radius: 40px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            padding: 16px 18px;
+            border-radius: 28px;
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+            border: 1px solid #e2edf2;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+        
+        .stat-card h4 {
+            color: #4a5568;
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1f6e8c;
+        }
+        
+        .month-card {
+            background: white;
+            border-radius: 32px;
+            margin-bottom: 18px;
+            border: 1px solid #e2edf2;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        
+        .month-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .month-card-header {
+            background: linear-gradient(135deg, #e9f0f5, #dce6ef);
+            padding: 16px 20px;
+            font-weight: 800;
+            font-size: 18px;
+            color: #1e2a3e;
+            border-radius: 32px 32px 0 0;
+        }
+        
+        .month-card-content {
+            padding: 18px;
+        }
+        
+        .actual-amount-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 60px;
+            border: 2px solid #e2e8f0;
+            margin: 8px 0;
+            font-size: 15px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .actual-amount-input:focus {
+            border-color: #1f6e8c;
+            outline: none;
+        }
+
+tr:first-child td:not(.type-header) {
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    vertical-align: middle;
+    height: 50px;
+}
+
+.shift-cell {
+    background-color: #2b7a4b !important;
+    color: white !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.shift-cell:hover {
+    background-color: #1e5a38 !important;
+    transform: scale(1.02);
+}
+
+.popup-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 32px 35px;
+    border-radius: 48px;
+    z-index: 2200;
+    width: calc(100% - 1cm);
+    max-width: 500px;
+    text-align: center;
+    display: none;
+    box-shadow: 0 30px 55px rgba(0, 0, 0, 0.3);
+    animation: popupBounce 0.3s ease-out;
+}
+        
+        @keyframes popupBounce {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            80% {
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .popup-box h3 {
+            margin-bottom: 15px;
+            font-size: 26px;
+            font-weight: 800;
+        }
+        
+        .popup-box p {
+            margin-bottom: 25px;
+            color: #4a5568;
+            font-size: 16px;
+        }
+        
+        .popup-box button {
+            background: linear-gradient(135deg, #1f6e8c, #0e4e6b);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2100;
+            display: none;
+        }
+        
+.prices-info {
+    margin-top: 20px;
+    padding: 16px 24px;
+    background: white;
+    border-radius: 32px;
+    font-size: 13px;
+    color: #4a5568;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+}
+        
+        .price-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .price-item i {
+            color: #1f6e8c;
+            font-size: 14px;
+        }
+
+@media (max-width: 850px) {
+    .main-container {
+        width: calc(100% - 0.8cm);
+        margin-left: 0.4cm;
+        margin-right: 0.4cm;
+    }
+    
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: 40px;
+        width: 100%;
+    }
+    
+    .month-nav {
+        justify-content: center;
+    }
+    
+    .control-buttons {
+        justify-content: center;
+    }
+    
+    .current-month-display {
+        font-size: 1.3rem;
+    }
+    
+    .table-input {
+        width: 55px;
+        padding: 6px 3px;
+        font-size: 12px;
+    }
+    
+    .modal-content {
+        width: calc(100% - 0.8cm);
+        max-width: calc(100% - 0.8cm);
+        padding: 20px;
+    }
+    
+    .popup-box {
+        width: calc(100% - 0.8cm);
+    }
+    
+    .logout-btn {
+        right: calc(0.4cm + 10px);
+    }
+    
+    .dates-grid {
+        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+        gap: 8px;
+        padding: 15px;
+        width: 100%;
+    }
+    
+    .date-cell-select {
+        padding: 8px 0;
+        font-size: 13px;
+    }
+    
+    .total-earning {
+        font-size: 2.2rem;
+    }
+    
+    td, th {
+        padding: 6px 8px;
+    }
+    
+    .content {
+        padding: 20px 0;
+    }
+}
+
+@media (max-width: 550px) {
+    .main-container {
+        width: calc(100% - 0.6cm);
+        margin-left: 0.3cm;
+        margin-right: 0.3cm;
+    }
+    
+    .content {
+        padding: 15px 0;
+    }
+    
+    .table-input {
+        width: 48px;
+        font-size: 11px;
+    }
+    
+    .modal-content {
+        width: calc(100% - 0.6cm);
+        max-width: calc(100% - 0.6cm);
+        padding: 15px;
+    }
+    
+    .popup-box {
+        width: calc(100% - 0.6cm);
+        padding: 25px 20px;
+    }
+    
+    .logout-btn {
+        right: calc(0.3cm + 10px);
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+    
+    td, th {
+        padding: 4px 6px;
+    }
+    
+    .enhanced-control-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+    
+    .dates-grid {
+        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+        gap: 6px;
+        padding: 12px;
+    }
+    
+    .date-cell-select {
+        padding: 6px 0;
+        font-size: 12px;
+    }
+}
+
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-container {
+        margin: 0;
+        padding: 0;
+    }
+    .stat-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .month-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    table {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+.btn-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f6e8c;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0e4e6b;
+}
+        
+.type-header,
+tbody td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    background: #e9f0f5 !important;
+    z-index: 20 !important;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05) !important;
+}
+
+tbody tr td:first-child {
+    background: #e9f0f5;
+    font-weight: 800;
+}
+
+tbody tr td:first-child {
+    background: #e9f0f5 !important;
+    font-weight: 800;
+}
+
+thead tr:first-child th:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 30 !important;
+    background: #2c3e50 !important;
+}
+
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    min-width: 280px;
+    max-width: 380px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transform: translateX(100%);
+    animation: slideIn 0.3s ease forwards;
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast.success {
+    border-left: 5px solid #27ae60;
+}
+
+.toast.error {
+    border-left: 5px solid #e74c3c;
+}
+
+.toast.info {
+    border-left: 5px solid #1f6e8c;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.toast.success .toast-title {
+    color: #27ae60;
+}
+
+.toast.error .toast-title {
+    color: #e74c3c;
+}
+
+.toast.info .toast-title {
+    color: #1f6e8c;
+}
+
+.toast-message {
+    font-size: 13px;
+    color: #4a5568;
+    line-height: 1.4;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    padding: 4px;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+.toast-close svg {
+    width: 16px;
+    height: 16px;
+    fill: #a0aec0;
+}
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    animation: progress 3s linear forwards;
+}
+
+.toast.success .toast-progress {
+    background: #27ae60;
+}
+
+.toast.error .toast-progress {
+    background: #e74c3c;
+}
+
+.toast.info .toast-progress {
+    background: #1f6e8c;
+}
+
+@keyframes progress {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+<div class="global-loader" id="globalLoader">
+    <div class="loader-circle"></div>
+</div>
+
+<div class="login-page" id="loginPage">
+    <div class="login-container">
+        <div class="logo-container">
+            <div class="logo-circle">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <h1 class="login-title">Shogi Calculation</h1>
+        </div>
+        
+        <div class="input-group-modern">
+            <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" class="input-modern" placeholder="მომხმარებელი" autocomplete="username">
+            </div>
+        </div>
+        
+        <div class="input-group-modern">
+            <div class="input-wrapper">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" class="input-modern" placeholder="პაროლი" autocomplete="current-password">
+            </div>
+        </div>
+        
+        <button class="btn-modern" onclick="login()" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> შესვლა
+        </button>
+        
+        <div class="login-footer" style="margin-top: 25px; font-size: 12px; color: #888;">
+        </div>
+    </div>
+</div>
+
+<div class="main-container" id="mainApp">
+    <div class="main-header" id="mainHeader">
+<h1 onclick="refreshData()" style="cursor: pointer;"><i class="fas fa-calculator"></i>ShogiCalc.</h1>
+</div>
+    
+    <button class="logout-btn" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> გასვლა
+    </button>
+    
+    <div class="content">
+        <div class="controls">
+            <div class="month-nav">
+                <button class="nav-arrow" id="prevMonthBtn" title="წინა თვე">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+<div class="current-month-display" id="currentMonthLabel"></div>
+<button class="nav-arrow" id="nextMonthBtn" title="შემდეგი თვე">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="control-buttons">
+                <button class="enhanced-control-btn enhanced-control-btn-success" onclick="showAddMonthModal()">
+                    <i class="fas fa-plus-circle"></i> ახალი თვე
+                </button>
+                <button class="enhanced-control-btn enhanced-control-btn-warning" onclick="openAddShiftForNextMonthOnly()">
+                    <i class="fas fa-calendar-plus"></i> მორიგეობების დამატება
+                </button>
+                <button class="enhanced-control-btn enhanced-control-btn-primary" onclick="showOtherMonthsModal()">
+                    <i class="fas fa-calendar-alt"></i> ყველა მონაცემი
+                </button>
+            </div>
+        </div>
+        
+        <div class="earning-panel">
+            <div>მოსალოდნელი შემოსავალი ამ თვეს</div>
+            <div class="total-earning" id="totalEarning">0.00 ₾</div>
+        </div>
+        
+        <div class="table-container">
+            <table id="mainTable">
+                <thead id="tableHeader">
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="otherMonthsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-calendar-alt"></i> საერთო მონაცემები</h3>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="printOtherMonths()" style="background: #27ae60; border: none; color: white; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#1e8449'" onmouseout="this.style.background='#27ae60'">
+                    <i class="fas fa-print"></i>
+                </button>
+                <button onclick="closeModal('otherMonthsModal')" style="background: #f0f2f5; border: none; color: #666; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#e74c3c'; this.style.color='white'" onmouseout="this.style.background='#f0f2f5'; this.style.color='#666'">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="globalStats" class="stats-grid"></div>
+        <div id="monthsContainer"></div>
+    </div>
+</div>
+
+<div class="modal" id="addMonthModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-calendar-plus"></i> ახალი თვის დამატება</h3>
+            <button onclick="closeModal('addMonthModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 700; color: #2d3748;">თვე</label>
+            <select id="newMonth" style="width:100%; padding: 14px; border-radius: 40px; border: 2px solid #e2e8f0; font-size: 16px;">
+                <option value="0">იანვარი</option>
+                <option value="1">თებერვალი</option>
+                <option value="2">მარტი</option>
+                <option value="3">აპრილი</option>
+                <option value="4">მაისი</option>
+                <option value="5">ივნისი</option>
+                <option value="6">ივლისი</option>
+                <option value="7">აგვისტო</option>
+                <option value="8">სექტემბერი</option>
+                <option value="9">ოქტომბერი</option>
+                <option value="10">ნოემბერი</option>
+                <option value="11">დეკემბერი</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 700; color: #2d3748;">წელი</label>
+<input type="number" id="newYear" value="2026" style="width:100%; padding: 14px; border-radius: 40px; border: 2px solid #e2e8f0; font-size: 16px;" min="2020" max="2030">        </div>
+        <button class="enhanced-btn-success enhanced-btn" style="width:100%;" onclick="addNewMonth()">
+            <i class="fas fa-check-circle"></i> დამატება
+        </button>
+    </div>
+</div>
+
+<div class="modal" id="addShiftModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-calendar-plus"></i> მორიგეობების დამატება</h3>
+            <button onclick="closeModal('addShiftModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="shiftMonthWarning" class="warning-text">
+            მორიგეობის დამატება შესაძლებელია მხოლოდ შემდეგი თვისთვის
+        </div>
+        
+        <h4 style="margin: 10px 0 5px 0; color: #2d3748;">თარიღები:</h4>
+        <div class="dates-grid" id="datesGrid">
+        </div>
+        
+        <div class="insurance-check">
+            <input type="checkbox" id="shiftInsurance">
+            <label>დაზღვევა (100 ₾)</label>
+        </div>
+        
+        <div class="fitpass-check">
+            <input type="checkbox" id="fitpassCheckbox">
+            <label>Fitpass (85 ₾)</label>
+        </div>
+        
+        <div style="display: flex; gap: 16px; margin-top: 25px;">
+            <button class="enhanced-btn-success enhanced-btn" onclick="saveSelectedDates()" style="flex: 1;">
+                <i class="fas fa-save"></i> შენახვა
+            </button>
+            <button class="enhanced-btn-danger enhanced-btn" onclick="closeModal('addShiftModal')" style="flex: 0.5;">
+                <i class="fas fa-times"></i> გაუქმება
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="popup-overlay" id="popupOverlay"></div>
+<div class="popup-box" id="popupBox">
+    <h3 id="popupTitle">შეტყობინება</h3>
+    <p id="popupMessage">ეს არის საინფორმაციო შეტყობინება</p>
+    <button onclick="closePopup()">კარგი</button>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCliSpuGZq4ebc6gQD8cqVgq-xMituHHno",
+    authDomain: "salary-90666.firebaseapp.com",
+    projectId: "salary-90666",
+    storageBucket: "salary-90666.firebasestorage.app",
+    messagingSenderId: "1094602077369",
+    appId: "1:1094602077369:web:cb3eb66c762cd490739768",
+    measurementId: "G-LKVJQESGY7"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+    const USERNAME = "alex";
+    const PASSWORD = "2911";
+    
+    const HOURLY_RATE = 5.84;
+    const OBS_RATE = 7;
+    const TRANS_RATE = 5;
+    const STATION_RATE = 10;
+    const INSURANCE_DEDUCTION = 100;
+    const FITPASS_DEDUCTION = 85;
+    
+const georgianMonths = [
+    "იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი",
+    "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"
+];
+
+let monthlyData = {};
+
+const currentDate = new Date();
+let currentDisplayYear = currentDate.getFullYear();
+let currentDisplayMonth = currentDate.getMonth();
+
+let selectedShiftDays = [];
+let nextMonthTarget = null;
+    
+    function showLoader(show) {
+        const loader = document.getElementById('globalLoader');
+        if (show) {
+            loader.classList.add('active');
+        } else {
+            loader.classList.remove('active');
+        }
+    }
+    
+    function showPopup(message, type = "info") {
+        const popupBox = document.getElementById('popupBox');
+        const popupOverlay = document.getElementById('popupOverlay');
+        const popupTitle = document.getElementById('popupTitle');
+        const popupMessage = document.getElementById('popupMessage');
+        
+        popupMessage.textContent = message;
+        
+        if (type === "error") {
+            popupTitle.textContent = "შეცდომა";
+            popupTitle.style.color = "#e74c3c";
+        } else if (type === "success") {
+            popupTitle.textContent = "წარმატემა";
+            popupTitle.style.color = "#27ae60";
+        } else {
+            popupTitle.textContent = "ინფორმაცია";
+            popupTitle.style.color = "#1f6e8c";
+        }
+        
+        popupOverlay.style.display = 'block';
+        popupBox.style.display = 'block';
+        
+        setTimeout(() => {
+            closePopup();
+        }, 2500);
+    }
+    
+    function closePopup() {
+        document.getElementById('popupOverlay').style.display = 'none';
+        document.getElementById('popupBox').style.display = 'none';
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
+    function getMonthKey(year, month) {
+        return `${year}-${month}`;
+    }
+    
+    
+    function checkSavedData() {
+    const saved = localStorage.getItem('mediClubDataComplete');
+    if (saved) {
+        const data = JSON.parse(saved);
+        console.log('Saved months:', Object.keys(data));
+        return data;
+    }
+    return null;
+}
+
+function saveData() {
+    showLoader(true);
+    // Save to Firebase under user-specific path
+    const userRef = database.ref(`users/${USERNAME}/monthlyData`);
+    userRef.set(monthlyData)
+        .then(() => {
+            setTimeout(() => showLoader(false), 300);
+        })
+        .catch((error) => {
+            console.error("Save error:", error);
+            showLoader(false);
+            showPopup("მონაცემების შენახვა ვერ მოხერხდა!", "error");
+        });
+}
+    
+    function refreshData() {
+    showLoader(true);
+    
+    loadData();
+    
+    renderCurrentMonth();
+    
+    showPopup("მონაცემები განახლდა!", "success");
+    
+    setTimeout(() => showLoader(false), 500);
+}
+
+    
+function loadData() {
+    showLoader(true);
+    const userRef = database.ref(`users/${USERNAME}/monthlyData`);
+    userRef.once('value')
+        .then((snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                monthlyData = data;
+                console.log('Data loaded from Firebase:', Object.keys(monthlyData).length, 'months');
+            } else {
+                console.log('No saved data found in Firebase');
+                monthlyData = {};
+            }
+            showLoader(false);
+            renderCurrentMonth();
+        })
+        .catch((error) => {
+            console.error("Load error:", error);
+            showLoader(false);
+            monthlyData = {};
+            renderCurrentMonth();
+            showPopup("მონაცემების ჩატვირთვა ვერ მოხერხდა!", "error");
+        });
+}
+    
+function getDutyRate(year, month) {
+    if (year > 2025 || (year === 2025 && month >= 4)) {
+        return 5.84;
+    }
+    return 5;
+}
+
+function getObsRate(year, month) {
+    if (year > 2025 || (year === 2025 && month >= 1)) {
+        return 7;
+    }
+    return 5;
+}
+
+function calculateAndDisplayTotal() {
+    const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
+    const data = monthlyData[key];
+    
+    if (!data) {
+        document.getElementById('totalEarning').textContent = '0.00 ₾';
+        return;
+    }
+    
+    let total = 0;
+    
+    const dutyRate = getDutyRate(currentDisplayYear, currentDisplayMonth);
+    const obsRate = getObsRate(currentDisplayYear, currentDisplayMonth);
+    
+    if (data.shifts) {
+        Object.values(data.shifts).forEach(shift => {
+            total += (shift.duty * dutyRate);
+            total += (shift.obs * obsRate);
+            total += (shift.trans * TRANS_RATE);
+            total += (shift.station * STATION_RATE);
+        });
+    }
+    
+    if (data.extras) {
+        Object.values(data.extras).forEach(extra => {
+            total += (extra.obs * obsRate);
+            total += (extra.trans * TRANS_RATE);
+            total += (extra.station * STATION_RATE);
+        });
+    }
+    
+    if (data.insurance) total -= INSURANCE_DEDUCTION;
+    if (data.fitpass) total -= FITPASS_DEDUCTION;
+    
+    document.getElementById('totalEarning').textContent = total.toFixed(2) + ' ₾';
+}
+  
+  function showToast(message, type = "info") {
+    const container = document.getElementById('toastContainer');
+    
+    const icons = {
+        success: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/></svg>`,
+        error: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/></svg>`,
+        info: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#1f6e8c"/></svg>`
+    };
+    
+    const titles = {
+        success: "წარმატება",
+        error: "შეცდომა",
+        info: "ინფორმაცია"
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    toast.innerHTML = `
+        <div class="toast-icon">
+            ${icons[type]}
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#a0aec0"/>
+            </svg>
+        </button>
+        <div class="toast-progress"></div>
+    `;
+    
+    container.appendChild(toast);
+    
+    const timeout = setTimeout(() => {
+        removeToast(toast);
+    }, 3000);
+    
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(timeout);
+        removeToast(toast);
+    });
+    
+    toast.addEventListener('mouseenter', () => {
+        clearTimeout(timeout);
+        const progress = toast.querySelector('.toast-progress');
+        if (progress) {
+            progress.style.animationPlayState = 'paused';
+        }
+    });
+    
+    toast.addEventListener('mouseleave', () => {
+        const newTimeout = setTimeout(() => {
+            removeToast(toast);
+        }, 3000);
+        toast._timeout = newTimeout;
+        const progress = toast.querySelector('.toast-progress');
+        if (progress) {
+            progress.style.animationPlayState = 'running';
+        }
+    });
+}
+
+function removeToast(toast) {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => {
+        toast.remove();
+    }, 300);
+}
+
+function showPopup(message, type = "info") {
+    showToast(message, type);
+}
+
+function updateShiftValue(day, field, value) {
+    const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
+    
+    if (!monthlyData[key]) {
+        monthlyData[key] = { shifts: {}, insurance: false, fitpass: false, actualAmount: 0 };
+    }
+    
+    let numValue = parseFloat(value);
+    if (isNaN(numValue)) numValue = 0;
+    
+    if (field === 'duty') {
+        if (!monthlyData[key].shifts[day]) {
+            monthlyData[key].shifts[day] = { duty: 0, obs: 0, trans: 0, station: 0 };
+        }
+        monthlyData[key].shifts[day][field] = numValue;
+    } 
+    else {
+        if (monthlyData[key].shifts[day]) {
+            monthlyData[key].shifts[day][field] = numValue;
+        } else {
+            if (!monthlyData[key].extras) {
+                monthlyData[key].extras = {};
+            }
+            if (!monthlyData[key].extras[day]) {
+                monthlyData[key].extras[day] = { obs: 0, trans: 0, station: 0 };
+            }
+            monthlyData[key].extras[day][field] = numValue;
+        }
+    }
+    
+    saveData();
+    renderCurrentMonth();
+}
+    
+function handleShiftCellClick(year, month, day, currentValue) {
+    const key = getMonthKey(year, month);
+    const hasExistingValue = currentValue > 0;
+    
+    if (!hasExistingValue) {
+        showShiftTypePopup(year, month, day);
+    } else {
+        showConfirmChangePopup(year, month, day, currentValue);
+    }
+}
+
+function showShiftTypePopup(year, month, day) {
+    let overlay = document.getElementById('shiftChoiceOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'shiftChoiceOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <h3 style="margin-bottom: 25px; font-size: 24px; color: #1f6e8c;">ტიპი</h3>
+            <button id="choice24hrs" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 15px 25px; border-radius: 50px; font-weight: 700; font-size: 16px; margin: 10px; cursor: pointer; width: 80%;">24 საათი</button>
+            <button id="choiceOther" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 15px 25px; border-radius: 50px; font-weight: 700; font-size: 16px; margin: 10px; cursor: pointer; width: 80%;">სხვა</button>
+            <button id="choiceCancel" style="background: #e2e8f0; color: #4a5568; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 600; margin-top: 15px; cursor: pointer; width: 60%;">გაუქმება</button>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('choice24hrs').onclick = () => {
+        updateShiftValue(day, 'duty', 24);
+        overlay.style.display = 'none';
+        showPopup('მორიგეობა დაემატა', 'success');
+    };
+    
+    document.getElementById('choiceOther').onclick = () => {
+        overlay.style.display = 'none';
+        showCustomHoursInput(year, month, day);
+    };
+    
+    document.getElementById('choiceCancel').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function showCustomHoursInput(year, month, day) {
+    let overlay = document.getElementById('customHoursOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'customHoursOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <h3 style="margin-bottom: 20px; font-size: 24px; color: #1f6e8c;">შეიყვანეთ საათი</h3>
+            <input type="number" id="customHours" step="0.5" min="0" style="width: 80%; padding: 14px; border-radius: 50px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; margin-bottom: 20px;" placeholder="საათი">
+            <div>
+                <button id="saveCustomHours" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">შენახვა</button>
+                <button id="cancelCustomHours" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('saveCustomHours').onclick = () => {
+        const hours = parseFloat(document.getElementById('customHours').value);
+        if (!isNaN(hours) && hours > 0) {
+            updateShiftValue(day, 'duty', hours);
+            overlay.style.display = 'none';
+            showPopup(`დაემატა ${hours} საათი`, 'success');
+        } else {
+            showPopup('გთხოვთ შეიყვანოთ სწორი საათი', 'error');
+        }
+    };
+    
+    document.getElementById('cancelCustomHours').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function showConfirmChangePopup(year, month, day, currentValue) {
+    let overlay = document.getElementById('confirmChangeOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'confirmChangeOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 50px; color: #f39c12; margin-bottom: 15px;"></i>
+            <h3 style="margin-bottom: 15px; color: #2d3748;">ნამდვილად გსურთ დროის შეცვლა?</h3>
+            <p style="margin-bottom: 25px; color: #718096;">მიმდინარე მნიშვნელობა: <strong>${currentValue}</strong> საათი</p>
+            <div>
+                <button id="confirmYes" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">შეცვლა</button>
+                <button id="confirmNo" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('confirmYes').onclick = () => {
+        overlay.style.display = 'none';
+        showCustomHoursInput(year, month, day);
+    };
+    
+    document.getElementById('confirmNo').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function printOtherMonths() {
+    const globalStats = document.getElementById('globalStats').cloneNode(true);
+    const monthsContainer = document.getElementById('monthsContainer').cloneNode(true);
+    
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-container';
+    
+    const title = document.createElement('h1');
+    title.textContent = 'MediClubGeorgia-ში სტაციონარში ექთნის გამომუშავებული ხელფასი';
+    title.style.cssText = 'text-align: center; font-size: 24px; margin-bottom: 20px; color: #1f6e8c; font-weight: 800;';
+    printContainer.appendChild(title);
+    
+    const statsWrapper = document.createElement('div');
+    statsWrapper.appendChild(globalStats);
+    statsWrapper.style.cssText = 'margin-bottom: 30px;';
+    
+    const statCards = statsWrapper.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        card.style.cssText = 'background: #f8fafc; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #ddd;';
+    });
+    
+    printContainer.appendChild(statsWrapper);
+    
+    const monthsWrapper = document.createElement('div');
+    monthsWrapper.appendChild(monthsContainer);
+    
+    const tables = monthsWrapper.querySelectorAll('table');
+    tables.forEach(table => {
+        table.style.cssText = 'width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;';
+        
+        const headers = table.querySelectorAll('th');
+        headers.forEach(th => {
+            th.style.cssText = 'background: #2c3e50; color: white; padding: 8px; border: 1px solid #ddd; text-align: center;';
+        });
+        
+        const cells = table.querySelectorAll('td');
+        cells.forEach(td => {
+            td.style.cssText = 'padding: 6px; border: 1px solid #ddd; text-align: center;';
+        });
+        
+        const firstCols = table.querySelectorAll('td:first-child');
+        firstCols.forEach(col => {
+            col.style.cssText = 'background: #e9f0f5; font-weight: 800; padding: 6px; border: 1px solid #ddd; text-align: left; position: sticky; left: 0;';
+        });
+    });
+    
+    const monthCards = monthsWrapper.querySelectorAll('.month-card');
+    monthCards.forEach(card => {
+        card.style.cssText = 'margin-bottom: 30px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; page-break-inside: avoid;';
+        
+        const headers = card.querySelectorAll('.month-card-header');
+        headers.forEach(header => {
+            header.style.cssText = 'background: linear-gradient(135deg, #1f6e8c, #0e4e6b); color: white; padding: 12px; font-weight: 800; font-size: 16px;';
+        });
+        
+        const deleteBtns = card.querySelectorAll('button');
+        deleteBtns.forEach(btn => {
+            btn.style.display = 'none';
+        });
+    });
+    
+    printContainer.appendChild(monthsWrapper);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-container, .print-container * {
+                visibility: visible;
+            }
+            .print-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                padding: 20px;
+                background: white;
+            }
+            .stat-card {
+                break-inside: avoid;
+            }
+            .month-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            table {
+                break-inside: avoid;
+            }
+            @page {
+                size: landscape;
+                margin: 1cm;
+            }
+        }
+    `;
+    printContainer.appendChild(style);
+    
+    document.body.appendChild(printContainer);
+    
+    window.print();
+    
+    setTimeout(() => {
+        document.body.removeChild(printContainer);
+    }, 100);
+}
+
+function renderCurrentMonth() {
+    if (currentDisplayYear === undefined || currentDisplayMonth === undefined) {
+        const today = new Date();
+        currentDisplayYear = today.getFullYear();
+        currentDisplayMonth = today.getMonth();
+    }
+    
+    const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
+    
+    const monthData = monthlyData[key] || { shifts: {}, insurance: false, fitpass: false, actualAmount: 0 };
+    
+    const daysInMonth = new Date(currentDisplayYear, currentDisplayMonth + 1, 0).getDate();
+    
+    document.getElementById('currentMonthLabel').textContent = `${georgianMonths[currentDisplayMonth]} ${currentDisplayYear}`;
+    
+    const tableHeader = document.getElementById('tableHeader');
+    tableHeader.innerHTML = '';
+    
+    let firstRow = document.createElement('tr');
+    let emptyTh = document.createElement('th');
+    emptyTh.textContent = 'ტიპი';
+    emptyTh.style.background = '#2c3e50';
+    emptyTh.style.color = 'white';
+    emptyTh.style.minWidth = '180px';
+    firstRow.appendChild(emptyTh);
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const th1 = document.createElement('th');
+        th1.textContent = day;
+        th1.style.background = '#2c3e50';
+        th1.style.color = 'white';
+        th1.style.minWidth = '70px';
+        firstRow.appendChild(th1);
+    }
+    
+    tableHeader.appendChild(firstRow);
+    
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = '';
+    
+    const rows = [
+        { name: "მორიგეობა", field: "duty", step: 0.5 },
+        { name: "ობსერვაცია", field: "obs", step: 1 },
+        { name: "ჰემოტრანსფუზია", field: "trans", step: 1 },
+        { name: "დღის სტაციონარი", field: "station", step: 1 }
+    ];
+    
+    rows.forEach(row => {
+        let tr = document.createElement('tr');
+        let tdLabel = document.createElement('td');
+        tdLabel.className = 'type-header';
+        tdLabel.textContent = row.name;
+        tr.appendChild(tdLabel);
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+let value = 0;
+if (row.field === 'duty') {
+    const shift = monthData.shifts[day] || { duty: 0 };
+    value = shift.duty || 0;
+} else {
+    const shift = monthData.shifts[day] || {};
+    const extra = (monthData.extras && monthData.extras[day]) || {};
+    value = (shift[row.field] || extra[row.field] || 0);
+}
+            
+const isDutyRow = row.field === "duty";
+const hasShiftOnThisDay = monthData.shifts[day] !== undefined;
+const shouldBeGreen = isDutyRow && hasShiftOnThisDay;
+            const cellClass = shouldBeGreen ? 'shift-cell' : '';
+            
+            const td = document.createElement('td');
+            td.className = cellClass;
+            
+            if (isDutyRow) {
+                td.style.cursor = 'pointer';
+                td.style.textAlign = 'center';
+                td.style.fontWeight = 'bold';
+                td.style.fontSize = '14px';
+                
+                const displayValue = value === 0 ? '' : value;
+                td.textContent = displayValue;
+                
+                td.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const currentVal = value;
+                    console.log('Cell clicked for day:', day, 'current value:', currentVal);
+                    handleShiftCellClick(currentDisplayYear, currentDisplayMonth, day, currentVal);
+                });
+            } else {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'table-input';
+                input.value = value === 0 ? '' : value;
+                input.step = row.step;
+                input.min = 0;
+                input.setAttribute('data-day', day);
+                input.setAttribute('data-field', row.field);
+                
+                input.onchange = function(e) {
+                    updateShiftValue(day, row.field, this.value);
+                };
+                
+                td.appendChild(input);
+            }
+            
+            tr.appendChild(td);
+        }
+        
+        tableBody.appendChild(tr);
+    });
+
+    calculateAndDisplayTotal();
+}
+    
+function goPrevMonth() {
+    console.log('goPrevMonth called');
+    let newMonth = currentDisplayMonth - 1;
+    let newYear = currentDisplayYear;
+    
+    if (newMonth < 0) {
+        newMonth = 11;
+        newYear--;
+    }
+    
+    currentDisplayYear = newYear;
+    currentDisplayMonth = newMonth;
+    console.log('New month:', newMonth, newYear);
+    renderCurrentMonth();
+}
+
+function goNextMonth() {
+    console.log('goNextMonth called');
+    let newMonth = currentDisplayMonth + 1;
+    let newYear = currentDisplayYear;
+    
+    if (newMonth > 11) {
+        newMonth = 0;
+        newYear++;
+    }
+    
+    currentDisplayYear = newYear;
+    currentDisplayMonth = newMonth;
+    console.log('New month:', newMonth, newYear);
+    renderCurrentMonth();
+}
+    
+    function showAddMonthModal() {
+        document.getElementById('addMonthModal').style.display = 'flex';
+    }
+    
+    function addNewMonth() {
+        const month = parseInt(document.getElementById('newMonth').value);
+        const year = parseInt(document.getElementById('newYear').value);
+        const key = getMonthKey(year, month);
+        
+        if (monthlyData[key]) {
+            showPopup(`${georgianMonths[month]} ${year} უკვე არსებობს!`, "error");
+            return;
+        }
+        
+        monthlyData[key] = { shifts: {}, insurance: false, fitpass: false, actualAmount: 0 };
+        saveData();
+        showPopup(`დაემატა ახალი თვე: ${georgianMonths[month]} ${year}`, "success");
+        closeModal('addMonthModal');
+        
+        currentDisplayYear = year;
+        currentDisplayMonth = month;
+        renderCurrentMonth();
+    }
+    
+    function getNextMonthFromNow() {
+        const today = new Date();
+        let nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        return { year: nextMonthDate.getFullYear(), month: nextMonthDate.getMonth() };
+    }
+    
+function openAddShiftForNextMonthOnly() {
+    const targetYear = currentDisplayYear;
+    const targetMonth = currentDisplayMonth;
+    const targetKey = getMonthKey(targetYear, targetMonth);
+    
+    if (!monthlyData[targetKey]) {
+        showPopup(`არ არსებობს ${georgianMonths[targetMonth]} ${targetYear}. გთხოვთ დაამატოთ თვე!`, "error");
+        return;
+    }
+    
+    nextMonthTarget = { year: targetYear, month: targetMonth };
+    const monthData = monthlyData[targetKey];
+    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    
+    const datesGrid = document.getElementById('datesGrid');
+    datesGrid.innerHTML = '';
+    selectedShiftDays = [];
+    
+    const existingShifts = monthData.shifts || {};
+    const existingDays = Object.keys(existingShifts).map(Number);
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'date-cell-select';
+        dateDiv.textContent = day;
+        
+        if (existingDays.includes(day)) {
+            dateDiv.classList.add('selected');
+            selectedShiftDays.push(day);
+        }
+        
+        dateDiv.onclick = (function(d) {
+            return function() {
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                    const index = selectedShiftDays.indexOf(d);
+                    if (index > -1) selectedShiftDays.splice(index, 1);
+                } else {
+                    this.classList.add('selected');
+                    selectedShiftDays.push(d);
+                }
+            };
+        })(day);
+        
+        datesGrid.appendChild(dateDiv);
+    }
+    
+    document.getElementById('shiftInsurance').checked = monthData.insurance || false;
+    document.getElementById('fitpassCheckbox').checked = monthData.fitpass || false;
+    
+    const warningDiv = document.getElementById('shiftMonthWarning');
+    warningDiv.innerHTML = `ამორჩეული თვე: <strong>${georgianMonths[targetMonth]} ${targetYear}</strong>`;
+    warningDiv.style.background = "#e8f0fe";
+    warningDiv.style.color = "#1f6e8c";
+    
+    document.getElementById('addShiftModal').style.display = 'flex';
+}
+    
+function saveSelectedDates() {
+    if (!nextMonthTarget) {
+        showPopup("შეცდომა: სამიზნე თვე არ არის განსაზღვრული", "error");
+        return;
+    }
+    
+    const { year, month } = nextMonthTarget;
+    const key = getMonthKey(year, month);
+    
+    if (!monthlyData[key]) {
+        monthlyData[key] = { shifts: {}, insurance: false, fitpass: false, actualAmount: 0 };
+    }
+    
+    monthlyData[key].insurance = document.getElementById('shiftInsurance').checked;
+    monthlyData[key].fitpass = document.getElementById('fitpassCheckbox').checked;
+    
+    const existingShifts = monthlyData[key].shifts || {};
+    const newShifts = {};
+    
+    selectedShiftDays.forEach(day => {
+        if (existingShifts[day]) {
+            newShifts[day] = { ...existingShifts[day] };
+        } else {
+            newShifts[day] = { duty: 0, obs: 0, trans: 0, station: 0 };
+        }
+    });
+    
+    monthlyData[key].shifts = newShifts;
+    
+    saveData();
+    closeModal('addShiftModal');
+    
+    showPopup(`${selectedShiftDays.length} თარიღი დამატებულია. დაზღვევა: ${monthlyData[key].insurance ? "ჩართულია" : "გათიშულია"}, Fitpass: ${monthlyData[key].fitpass ? "ჩართულია" : "გათიშულია"}`, "success");
+
+    if (currentDisplayYear === year && currentDisplayMonth === month) {
+        renderCurrentMonth();
+    }
+}
+    
+function showOtherMonthsModal() {
+    const monthsContainer = document.getElementById('monthsContainer');
+    const globalStats = document.getElementById('globalStats');
+    
+    let totalEarnedAll = 0;
+    let maxActual = 0;
+    let minActual = Infinity;
+    let allExpected = [];
+    
+    Object.keys(monthlyData).forEach(key => {
+        const data = monthlyData[key];
+        let expected = 0;
+        
+const [year, month] = key.split('-').map(Number);
+const dutyRate = getDutyRate(year, month);
+const obsRate = getObsRate(year, month);
+
+if (data.shifts) {
+    Object.values(data.shifts).forEach(shift => {
+        expected += (shift.duty * dutyRate);
+        expected += (shift.obs * obsRate);
+        expected += (shift.trans * TRANS_RATE);
+        expected += (shift.station * STATION_RATE);
+    });
+}
+
+if (data.extras) {
+    Object.values(data.extras).forEach(extra => {
+        expected += (extra.obs * obsRate);
+        expected += (extra.trans * TRANS_RATE);
+        expected += (extra.station * STATION_RATE);
+    });
+}
+        
+        if (data.insurance) expected -= INSURANCE_DEDUCTION;
+        if (data.fitpass) expected -= FITPASS_DEDUCTION;
+        allExpected.push(expected);
+        
+        if (data.actualAmount && data.actualAmount > 0) {
+            totalEarnedAll += data.actualAmount;
+            if (data.actualAmount > maxActual) maxActual = data.actualAmount;
+            if (data.actualAmount < minActual) minActual = data.actualAmount;
+        }
+    });
+    
+    if (minActual === Infinity) minActual = 0;
+    
+    let filteredExpected = allExpected.filter(val => val > 0);
+    let maxExpected = filteredExpected.length > 0 ? Math.max(...filteredExpected) : 0;
+    let minExpected = filteredExpected.length > 0 ? Math.min(...filteredExpected) : 0;
+    
+    globalStats.innerHTML = `
+        <div class="stat-card">
+            <h4>ჩარიცხული სულ</h4>
+            <div class="value">${totalEarnedAll.toFixed(2)} ₾</div>
+        </div>
+        <div class="stat-card">
+            <h4>მაქს. ჩარიცხული</h4>
+            <div class="value">${maxActual.toFixed(2)} ₾</div>
+        </div>
+        <div class="stat-card">
+            <h4>მინ. ჩარიცხული</h4>
+            <div class="value">${minActual.toFixed(2)} ₾</div>
+        </div>
+        <div class="stat-card">
+            <h4>მაქს. მოლოდინი</h4>
+            <div class="value">${maxExpected.toFixed(2)} ₾</div>
+        </div>
+        <div class="stat-card">
+            <h4>მინ. მოლოდინი</h4>
+            <div class="value">${minExpected.toFixed(2)} ₾</div>
+        </div>
+    `;
+    
+    monthsContainer.innerHTML = '';
+    
+    const sortedKeys = Object.keys(monthlyData).sort().reverse();
+    
+    if (sortedKeys.length === 0) {
+        monthsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">მონაცემები არ არის</div>';
+        document.getElementById('otherMonthsModal').style.display = 'flex';
+        return;
+    }
+    
+    sortedKeys.forEach(key => {
+        const [year, month] = key.split('-').map(Number);
+        const data = monthlyData[key];
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthName = `${georgianMonths[month]} ${year}`;
+        
+        let totalDuty = 0;
+        let totalObs = 0;
+        let totalTrans = 0;
+        let totalStation = 0;
+        
+        if (data.shifts) {
+            Object.values(data.shifts).forEach(shift => {
+                totalDuty += (shift.duty || 0);
+                totalObs += (shift.obs || 0);
+                totalTrans += (shift.trans || 0);
+                totalStation += (shift.station || 0);
+            });
+        }
+        
+        if (data.extras) {
+            Object.values(data.extras).forEach(extra => {
+                totalObs += (extra.obs || 0);
+                totalTrans += (extra.trans || 0);
+                totalStation += (extra.station || 0);
+            });
+        }
+        
+const dutyRate = getDutyRate(year, month);
+const obsRate = getObsRate(year, month);
+
+let expected = (totalDuty * dutyRate) + (totalObs * obsRate) + (totalTrans * TRANS_RATE) + (totalStation * STATION_RATE);
+if (data.insurance) expected -= INSURANCE_DEDUCTION;
+        if (data.fitpass) expected -= FITPASS_DEDUCTION;
+        
+        const actualAmount = data.actualAmount || 0;
+        
+        let tableHtml = `
+            <div class="month-card" style="margin-bottom: 30px; overflow: hidden;">
+                <div class="month-card-header" style="background: linear-gradient(135deg, #1f6e8c, #0e4e6b); color: white; border-radius: 0; display: flex; justify-content: space-between; align-items: center;">
+                    <span>${monthName}</span>
+                    <button onclick="deleteMonth('${key}', '${monthName}')" style="background: rgba(231, 76, 60, 0.8); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#e74c3c'" onmouseout="this.style.background='rgba(231, 76, 60, 0.8)'">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                <div style="overflow-x: auto; padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr>
+                                <th style="background: #2c3e50; color: white; padding: 10px; text-align: left; position: sticky; left: 0; min-width: 180px;">ტიპი</th>
+        `;
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            tableHtml += `<th style="background: #2c3e50; color: white; padding: 8px; text-align: center; min-width: 50px;">${day}</th>`;
+        }
+        
+        tableHtml += `<th style="background: #2c3e50; color: white; padding: 10px; text-align: center; min-width: 80px;">ჯამი</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+tableHtml += `<tr>
+    <td style="background: #e9f0f5; font-weight: 800; padding: 10px; position: sticky; left: 0; text-align: left; font-size: inherit;">მორიგეობა</td>`;
+for (let day = 1; day <= daysInMonth; day++) {
+    const shiftVal = (data.shifts && data.shifts[day] && data.shifts[day].duty) || 0;
+    const cellStyle = shiftVal > 0 ? 'background-color: #2b7a4b; color: white; font-weight: bold; text-align: center; padding: 8px;' : 'text-align: center; padding: 8px;';
+tableHtml += `<td style="${cellStyle}">${shiftVal > 0 ? shiftVal : ''}</td>`;
+  
+}
+tableHtml += `<td style="text-align: center; font-weight: bold; background: #e9f0f5; padding: 8px;">${totalDuty} სთ</td>
+             </tr>`;
+        
+        tableHtml += `<tr>
+            <td style="background: #e9f0f5; font-weight: 800; padding: 10px; position: sticky; left: 0;">ობსერვაცია</td>`;
+        for (let day = 1; day <= daysInMonth; day++) {
+            let obsVal = 0;
+            if (data.shifts && data.shifts[day]) obsVal += (data.shifts[day].obs || 0);
+            if (data.extras && data.extras[day]) obsVal += (data.extras[day].obs || 0);
+tableHtml += `<td style="text-align: center; padding: 8px;">${obsVal > 0 ? obsVal : ''}</td>`;
+}
+        tableHtml += `<td style="text-align: center; font-weight: bold; background: #e9f0f5; padding: 8px;">${totalObs}</td>
+        </tr>`;
+        
+        tableHtml += `<tr>
+            <td style="background: #e9f0f5; font-weight: 800; padding: 10px; position: sticky; left: 0;">ჰემოტრანსფუზია</td>`;
+        for (let day = 1; day <= daysInMonth; day++) {
+            let transVal = 0;
+            if (data.shifts && data.shifts[day]) transVal += (data.shifts[day].trans || 0);
+            if (data.extras && data.extras[day]) transVal += (data.extras[day].trans || 0);
+tableHtml += `<td style="text-align: center; padding: 8px;">${transVal > 0 ? transVal : ''}</td>`;
+}
+        tableHtml += `<td style="text-align: center; font-weight: bold; background: #e9f0f5; padding: 8px;">${totalTrans}</td>
+        </tr>`;
+        
+        tableHtml += `<tr>
+            <td style="background: #e9f0f5; font-weight: 800; padding: 10px; position: sticky; left: 0;">დღის სტაციონარი</td>`;
+        for (let day = 1; day <= daysInMonth; day++) {
+            let stationVal = 0;
+            if (data.shifts && data.shifts[day]) stationVal += (data.shifts[day].station || 0);
+            if (data.extras && data.extras[day]) stationVal += (data.extras[day].station || 0);
+tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? stationVal : ''}</td>`;
+}
+        tableHtml += `<td style="text-align: center; font-weight: bold; background: #e9f0f5; padding: 8px;">${totalStation}</td>
+        </tr>`;
+        
+        tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+<div style="padding: 20px 20px 15px 20px; border-top: 1px solid #e2edf2; text-align: right;">
+    <div style="font-size: 16px; display: flex; align-items: center; justify-content: flex-end; gap: 20px; flex-wrap: wrap;">
+        <div>
+            <span style="font-weight: 600;">მოსალოდნელი:</span>
+            <span style="color: #e74c3c; font-weight: 800; font-size: 18px; margin-left: 8px;">${expected.toFixed(2)} ₾</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 600;">ჩარიცხული:</span>
+            <span id="actualAmountDisplay_${key.replace(/-/g, '_')}" style="color: #27ae60; font-weight: 800; font-size: 18px; cursor: pointer;" onclick="promptActualAmount('${key}', ${actualAmount})">${actualAmount.toFixed(2)} ₾</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding-left: 20px; border-left: 2px solid #e2edf2;">
+            <span style="font-weight: 600;"></span>
+            ${(() => {
+                const difference = actualAmount - expected;
+                const absDifference = Math.abs(difference).toFixed(2);
+                if (difference > 0) {
+                    return `<span style="color: #27ae60; font-weight: 800; font-size: 18px;">+${absDifference} ₾</span>`;
+                } else if (difference < 0) {
+                    return `<span style="color: #e74c3c; font-weight: 800; font-size: 18px;">-${absDifference} ₾</span>`;
+                } else {
+                    return `<span style="color: #4a5568; font-weight: 800; font-size: 18px;">0 ₾</span>`;
+                }
+            })()}
+        </div>
+    </div>
+    <div style="display: flex; gap: 20px; justify-content: flex-end; font-size: 13px; color: #4a5568; padding-top: 10px; margin-top: 10px; border-top: 1px dashed #e2edf2;">
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                ${data.insurance ? 
+                    '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                    '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+                }
+            </svg>
+            დაზღვევა ${data.insurance ? '100 ₾' : ''}
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                ${data.fitpass ? 
+                    '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                    '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+                }
+            </svg>
+            Fitpass ${data.fitpass ? '85 ₾' : ''}
+        </span>
+    </div>
+</div>
+            </div>
+        `;
+        
+        monthsContainer.innerHTML += tableHtml;
+    });
+    
+    document.getElementById('otherMonthsModal').style.display = 'flex';
+}
+    
+    function promptActualAmount(monthKey, currentAmount) {
+    let overlay = document.getElementById('actualAmountOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'actualAmountOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <h3 style="margin-bottom: 20px; font-size: 24px; color: #1f6e8c;">თანხის შეცვლა</h3>
+            <p style="margin-bottom: 15px; color: #4a5568;">მიმდინარე მნიშვნელობა: <strong>${currentAmount.toFixed(2)} ₾</strong></p>
+            <input type="number" id="newActualAmount" step="0.01" min="0" value="${currentAmount}" 
+                   style="width: 80%; padding: 14px; border-radius: 50px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; margin-bottom: 20px;" 
+                   placeholder="თანხა ₾">
+            <div>
+                <button id="saveActualAmount" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">შენახვა</button>
+                <button id="cancelActualAmount" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('saveActualAmount').onclick = () => {
+        const newAmount = parseFloat(document.getElementById('newActualAmount').value);
+        if (!isNaN(newAmount) && newAmount >= 0) {
+            updateActualAmount(monthKey, newAmount);
+            overlay.style.display = 'none';
+            showPopup("ჩარიცხული თანხა განახლდა!", "success");
+        } else {
+            showPopup("გთხოვთ შეიყვანოთ სწორი თანხა", "error");
+        }
+    };
+    
+    document.getElementById('cancelActualAmount').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function updateActualAmount(monthKey, amount) {
+    if (monthlyData[monthKey]) {
+        monthlyData[monthKey].actualAmount = parseFloat(amount) || 0;
+        saveData();
+        showOtherMonthsModal();
+    }
+}
+    
+    function deleteMonth(monthKey, monthName) {
+    let overlay = document.getElementById('deleteMonthOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'deleteMonthOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 50px; color: #e74c3c; margin-bottom: 15px;"></i>
+            <h3 style="margin-bottom: 15px; color: #2d3748;">წაშლა</h3>
+            <p style="margin-bottom: 25px; color: #718096;">ნამდვილად გსურთ წაშალოთ <strong>${monthName}</strong>?<br>ყველა მონაცემი სამუდამოდ წაიშლება!</p>
+            <div>
+                <button id="confirmDelete" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">წაშლა</button>
+                <button id="cancelDelete" style="background: #95a5a6; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('confirmDelete').onclick = () => {
+        if (monthlyData[monthKey]) {
+            delete monthlyData[monthKey];
+            saveData();
+            overlay.style.display = 'none';
+            showPopup(`${monthName} წაიშალა!`, "success");
+            showOtherMonthsModal();
+            
+            const currentKey = getMonthKey(currentDisplayYear, currentDisplayMonth);
+            if (currentKey === monthKey) {
+                const remainingMonths = Object.keys(monthlyData).sort();
+                if (remainingMonths.length > 0) {
+                    const [lastYear, lastMonth] = remainingMonths[remainingMonths.length - 1].split('-').map(Number);
+                    currentDisplayYear = lastYear;
+                    currentDisplayMonth = lastMonth;
+                    renderCurrentMonth();
+                } else {
+                    renderCurrentMonth();
+                }
+            }
+        }
+    };
+    
+    document.getElementById('cancelDelete').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (username === USERNAME && password === PASSWORD) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        
+        loadData();
+        
+        const today = new Date();
+        currentDisplayYear = today.getFullYear();
+        currentDisplayMonth = today.getMonth();
+        
+        document.getElementById('currentMonthLabel').textContent = `${georgianMonths[currentDisplayMonth]} ${currentDisplayYear}`;
+        
+        localStorage.setItem('isLoggedIn', 'true');
+    } else {
+        showPopup("მომხმარებლის სახელი ან პაროლი არასწორია!", "error");
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+        
+        const loginContainer = document.querySelector('.login-container');
+        loginContainer.classList.add('error-animation');
+        setTimeout(() => loginContainer.classList.remove('error-animation'), 500);
+    }
+}
+    
+function logout() {
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    localStorage.removeItem('isLoggedIn');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    monthlyData = {};
+}
+    
+    function addEnterKeySupport() {
+        const passwordField = document.getElementById('password');
+        if (passwordField) {
+            passwordField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        }
+        
+        const usernameField = document.getElementById('username');
+        if (usernameField) {
+            usernameField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    if (passwordField) passwordField.focus();
+                }
+            });
+        }
+    }
+    
+function checkAutoLogin() {
+    const savedLogin = localStorage.getItem('isLoggedIn');
+    if (savedLogin === 'true') {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadData();
+        
+        const today = new Date();
+        currentDisplayYear = today.getFullYear();
+        currentDisplayMonth = today.getMonth();
+        
+        document.getElementById('currentMonthLabel').textContent = `${georgianMonths[currentDisplayMonth]} ${currentDisplayYear}`;
+        
+    }
+}
+    
+window.onload = function() {
+    addEnterKeySupport();
+    checkAutoLogin();
+    
+    const today = new Date();
+
+    
+    const prevBtn = document.getElementById('prevMonthBtn');
+    const nextBtn = document.getElementById('nextMonthBtn');
+    
+    if (prevBtn) {
+        prevBtn.onclick = goPrevMonth;
+    } else {
+        console.error('prevMonthBtn not found');
+    }
+    
+    if (nextBtn) {
+        nextBtn.onclick = goNextMonth;
+    } else {
+        console.error('nextMonthBtn not found');
+    }
+};
+</script>
+
+</body>
+</html>
