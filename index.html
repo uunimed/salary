@@ -2334,6 +2334,212 @@ function saveSelectedDates() {
     }
 }
     
+function printSingleMonth(monthKey) {
+    const [year, month] = monthKey.split('-').map(Number);
+    const data = monthlyData[monthKey];
+    const monthName = `${georgianMonths[month]} ${year}`;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const dutyRate = getDutyRate(year, month);
+    const obsRate = getObsRate(year, month);
+    
+    let totalDuty = 0;
+    let totalObs = 0;
+    let totalTrans = 0;
+    let totalStation = 0;
+    
+    if (data.shifts) {
+        Object.values(data.shifts).forEach(shift => {
+            totalDuty += (shift.duty || 0);
+            totalObs += (shift.obs || 0);
+            totalTrans += (shift.trans || 0);
+            totalStation += (shift.station || 0);
+        });
+    }
+    
+    if (data.extras) {
+        Object.values(data.extras).forEach(extra => {
+            totalObs += (extra.obs || 0);
+            totalTrans += (extra.trans || 0);
+            totalStation += (extra.station || 0);
+        });
+    }
+    
+    let expected = (totalDuty * dutyRate) + (totalObs * obsRate) + (totalTrans * TRANS_RATE) + (totalStation * STATION_RATE);
+    if (data.insurance) expected -= INSURANCE_DEDUCTION;
+    if (data.fitpass) expected -= FITPASS_DEDUCTION;
+    
+    const actualAmount = data.actualAmount || 0;
+    const difference = actualAmount - expected;
+    const absDifference = Math.abs(difference).toFixed(2);
+    const differenceText = difference >= 0 ? `+${absDifference} ₾` : `-${absDifference} ₾`;
+    const differenceColor = difference >= 0 ? '#27ae60' : '#e74c3c';
+    
+    let tableRows = '';
+    
+    const rows = [
+        { name: "მორიგეობა", getValue: (day) => (data.shifts && data.shifts[day] && data.shifts[day].duty) || 0 },
+        { name: "ობსერვაცია", getValue: (day) => {
+            let val = 0;
+            if (data.shifts && data.shifts[day]) val += (data.shifts[day].obs || 0);
+            if (data.extras && data.extras[day]) val += (data.extras[day].obs || 0);
+            return val;
+        }},
+        { name: "ჰემოტრანსფუზია", getValue: (day) => {
+            let val = 0;
+            if (data.shifts && data.shifts[day]) val += (data.shifts[day].trans || 0);
+            if (data.extras && data.extras[day]) val += (data.extras[day].trans || 0);
+            return val;
+        }},
+        { name: "დღის სტაციონარი", getValue: (day) => {
+            let val = 0;
+            if (data.shifts && data.shifts[day]) val += (data.shifts[day].station || 0);
+            if (data.extras && data.extras[day]) val += (data.extras[day].station || 0);
+            return val;
+        }}
+    ];
+    
+    rows.forEach(row => {
+        tableRows += `<tr>
+            <td style="background: #e9f0f5; font-weight: 800; padding: 10px; position: sticky; left: 0; text-align: left; border: 1px solid #ddd;">${row.name}</td>`;
+        for (let day = 1; day <= daysInMonth; day++) {
+            const val = row.getValue(day);
+            const isDutyRow = row.name === "მორიგეობა";
+            const cellStyle = isDutyRow && val > 0 ? 'background-color: #2b7a4b; color: white; font-weight: bold; text-align: center; padding: 8px; border: 1px solid #ddd;' : 'text-align: center; padding: 8px; border: 1px solid #ddd;';
+            tableRows += `<td style="${cellStyle}">${val > 0 ? val : ''}</td>`;
+        }
+        tableRows += `<tr>`;
+    });
+    
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-month-container';
+    printContainer.style.cssText = 'padding: 20px; font-family: "Segoe UI", Arial, sans-serif;';
+    
+    printContainer.innerHTML = `
+        <style>
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                .print-month-container, .print-month-container * {
+                    visibility: visible;
+                }
+                .print-month-container {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    background: white;
+                }
+                table {
+                    page-break-inside: avoid;
+                    border-collapse: collapse;
+                    width: 100%;
+                }
+                @page {
+                    size: landscape;
+                    margin: 1cm;
+                }
+            }
+        </style>
+        
+        <h1 style="text-align: center; font-size: 24px; margin-bottom: 20px; color: #1f6e8c; font-weight: 800;">MediClubGeorgia-ში სტაციონარში ექთნის გამომუშავებული ხელფასი</h1>
+        
+        <h2 style="text-align: center; font-size: 20px; margin-bottom: 25px; color: #2c3e50;">${monthName}</h2>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; justify-content: center; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 18px; border-radius: 40px; border: 1px solid #e2edf2;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="#1f6e8c"/>
+                </svg>
+                <span style="font-weight: 500;">ჯამში ნამუშევარი საათები:</span>
+                <span style="font-weight: 700; color: #2c3e50;">${totalDuty}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 18px; border-radius: 40px; border: 1px solid #e2edf2;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="#1f6e8c"/>
+                </svg>
+                <span style="font-weight: 500;">ობსერვაციების რაოდენობა:</span>
+                <span style="font-weight: 700; color: #2c3e50;">${totalObs}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 18px; border-radius: 40px; border: 1px solid #e2edf2;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="#1f6e8c"/>
+                </svg>
+                <span style="font-weight: 500;">ჰემოტრანსფუზიების რაოდენობა:</span>
+                <span style="font-weight: 700; color: #2c3e50;">${totalTrans}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 18px; border-radius: 40px; border: 1px solid #e2edf2;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="#1f6e8c"/>
+                </svg>
+                <span style="font-weight: 500;">დღის სტაციონარების რაოდენობა:</span>
+                <span style="font-weight: 700; color: #2c3e50;">${totalStation}</span>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; background: #fff8e7; padding: 6px 16px; border-radius: 30px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    ${data.insurance ? 
+                        '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                        '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+                    }
+                </svg>
+                <span style="font-size: 13px;">დაზღვევა: ${data.insurance ? '100 ₾' : '0 ₾'}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #e8f0fe; padding: 6px 16px; border-radius: 30px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    ${data.fitpass ? 
+                        '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                        '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+                    }
+                </svg>
+                <span style="font-size: 13px;">Fitpass: ${data.fitpass ? '85 ₾' : '0 ₾'}</span>
+            </div>
+        </div>
+        
+        <div style="overflow-x: auto; margin-bottom: 25px;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                <thead>
+                    <tr>
+                        <th style="background: #2c3e50; color: white; padding: 10px; text-align: left; position: sticky; left: 0; border: 1px solid #1a2a3a;">ტიპი</th>
+                        ${Array.from({length: daysInMonth}, (_, i) => `<th style="background: #2c3e50; color: white; padding: 8px; text-align: center; border: 1px solid #1a2a3a;">${i + 1}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="display: flex; justify-content: center; gap: 30px; background: #f8fafc; padding: 15px 20px; border-radius: 12px; margin-top: 15px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <div style="font-weight: 500; color: #4a5568; margin-bottom: 4px; font-size: 14px;">მოსალოდნელი ხელფასი</div>
+                <div style="font-size: 22px; font-weight: 700; color: #e74c3c;">${expected.toFixed(2)} ₾</div>
+            </div>
+            <div style="width: 1px; background: #ddd;"></div>
+            <div style="text-align: center;">
+                <div style="font-weight: 500; color: #4a5568; margin-bottom: 4px; font-size: 14px;">ჩარიცხული ხელფასი</div>
+                <div style="font-size: 22px; font-weight: 700; color: #27ae60;">${actualAmount.toFixed(2)} ₾</div>
+            </div>
+            <div style="width: 1px; background: #ddd;"></div>
+            <div style="text-align: center;">
+                <div style="font-weight: 500; color: #4a5568; margin-bottom: 4px; font-size: 14px;">სხვაობა</div>
+                <div style="font-size: 22px; font-weight: 700; color: ${differenceColor};">${differenceText}</div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(printContainer);
+    
+    window.print();
+    
+    setTimeout(() => {
+        document.body.removeChild(printContainer);
+    }, 100);
+}
+
 function showOtherMonthsModal() {
     const monthsContainer = document.getElementById('monthsContainer');
     const globalStats = document.getElementById('globalStats');
@@ -2457,12 +2663,17 @@ if (data.insurance) expected -= INSURANCE_DEDUCTION;
         
         let tableHtml = `
             <div class="month-card" style="margin-bottom: 30px; overflow: hidden;">
-                <div class="month-card-header" style="background: linear-gradient(135deg, #1f6e8c, #0e4e6b); color: white; border-radius: 0; display: flex; justify-content: space-between; align-items: center;">
-                    <span>${monthName}</span>
-                    <button onclick="deleteMonth('${key}', '${monthName}')" style="background: rgba(231, 76, 60, 0.8); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#e74c3c'" onmouseout="this.style.background='rgba(231, 76, 60, 0.8)'">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
+<div class="month-card-header" style="background: linear-gradient(135deg, #1f6e8c, #0e4e6b); color: white; border-radius: 0; display: flex; justify-content: space-between; align-items: center;">
+    <span>${monthName}</span>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="printSingleMonth('${key}')" style="background: rgba(39, 174, 96, 0.8); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#27ae60'" onmouseout="this.style.background='rgba(39, 174, 96, 0.8)'">
+            <i class="fas fa-print"></i>
+        </button>
+        <button onclick="deleteMonth('${key}', '${monthName}')" style="background: rgba(231, 76, 60, 0.8); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='#e74c3c'" onmouseout="this.style.background='rgba(231, 76, 60, 0.8)'">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </div>
+</div>
                 <div style="overflow-x: auto; padding: 0;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
                         <thead>
@@ -2553,26 +2764,26 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
             })()}
         </div>
     </div>
-    <div style="display: flex; gap: 20px; justify-content: flex-end; font-size: 13px; color: #4a5568; padding-top: 10px; margin-top: 10px; border-top: 1px dashed #e2edf2;">
-        <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                ${data.insurance ? 
-                    '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
-                    '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
-                }
-            </svg>
-            დაზღვევა ${data.insurance ? '100 ₾' : ''}
-        </span>
-        <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                ${data.fitpass ? 
-                    '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
-                    '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
-                }
-            </svg>
-            Fitpass ${data.fitpass ? '85 ₾' : ''}
-        </span>
-    </div>
+<div style="display: flex; gap: 20px; justify-content: flex-end; font-size: 13px; color: #4a5568; padding-top: 10px; margin-top: 10px; border-top: 1px dashed #e2edf2;">
+    <span style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            ${data.insurance ? 
+                '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+            }
+        </svg>
+        დაზღვევა ${data.insurance ? '100 ₾' : ''}
+    </span>
+    <span style="display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            ${data.fitpass ? 
+                '<path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="#27ae60"/>' : 
+                '<path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="#e74c3c"/>'
+            }
+        </svg>
+        Fitpass ${data.fitpass ? '85 ₾' : ''}
+    </span>
+</div>
 </div>
             </div>
         `;
