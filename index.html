@@ -1307,6 +1307,17 @@ thead tr:first-child th:first-child {
     }
 }
 
+@keyframes amber-blink {
+    0% { background-color: #2c3e50; color: white; }
+    50% { background-color: #b8860b; color: white; }
+    100% { background-color: #2c3e50; color: white; }
+}
+
+.today-date {
+    animation: amber-blink 1.5s ease-in-out infinite;
+    font-weight: bold;
+}
+
     </style>
 </head>
 <body>
@@ -2068,6 +2079,15 @@ function renderCurrentMonth() {
         currentDisplayMonth = today.getMonth();
     }
     
+    // Get today's date
+const today = new Date();
+const todayYear = today.getFullYear();
+const todayMonth = today.getMonth();
+const todayDay = today.getDate();
+
+// Check if current displayed month/year matches today
+const isTodayMonth = (currentDisplayYear === todayYear && currentDisplayMonth === todayMonth);
+
     const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
     
     const monthData = monthlyData[key] || { shifts: {}, insurance: false, fitpass: false, actualAmount: 0 };
@@ -2088,12 +2108,18 @@ function renderCurrentMonth() {
     firstRow.appendChild(emptyTh);
     
     for (let day = 1; day <= daysInMonth; day++) {
-        const th1 = document.createElement('th');
-        th1.textContent = day;
-        th1.style.background = '#2c3e50';
-        th1.style.color = 'white';
-        th1.style.minWidth = '70px';
-        firstRow.appendChild(th1);
+const th1 = document.createElement('th');
+th1.textContent = day;
+th1.style.background = '#2c3e50';
+th1.style.color = 'white';
+th1.style.minWidth = '70px';
+
+// Add blinking class if this is today's date
+if (isTodayMonth && day === todayDay) {
+    th1.classList.add('today-date');
+}
+
+firstRow.appendChild(th1);
     }
     
     tableHeader.appendChild(firstRow);
