@@ -1784,6 +1784,13 @@ function showPopup(message, type = "info") {
 }
 
 function updateShiftValue(day, field, value) {
+    // Check if this date is locked
+    if (isDateLocked(currentDisplayYear, currentDisplayMonth, day)) {
+        showDateLockedPopup(day, currentDisplayMonth, currentDisplayYear);
+        renderCurrentMonth(); // Re-render to restore original value
+        return;
+    }
+    
     const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
     
     if (!monthlyData[key]) {
@@ -1829,6 +1836,12 @@ function handleShiftCellClick(year, month, day, currentValue) {
 }
 
 function showShiftTypePopup(year, month, day) {
+    // Check if this date is locked
+    if (isDateLocked(year, month, day)) {
+        showDateLockedPopup(day, month, year);
+        return;
+    }
+    
     let overlay = document.getElementById('shiftChoiceOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -2176,14 +2189,22 @@ const shouldBeGreen = isDutyRow && hasShiftOnThisDay;
                     handleShiftCellClick(currentDisplayYear, currentDisplayMonth, day, currentVal);
                 });
             } else {
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.className = 'table-input';
-                input.value = value === 0 ? '' : value;
-                input.step = row.step;
-                input.min = 0;
-                input.setAttribute('data-day', day);
-                input.setAttribute('data-field', row.field);
+const input = document.createElement('input');
+input.type = 'number';
+input.className = 'table-input';
+input.value = value === 0 ? '' : value;
+input.step = row.step;
+input.min = 0;
+
+// Add this line to disable if date is locked:
+if (isDateLocked(currentDisplayYear, currentDisplayMonth, day)) {
+    input.disabled = true;
+    input.style.opacity = '0.6';
+    input.style.cursor = 'not-allowed';
+}
+
+input.setAttribute('data-day', day);
+input.setAttribute('data-field', row.field);
                 
                 input.onchange = function(e) {
                     updateShiftValue(day, row.field, this.value);
@@ -2237,10 +2258,17 @@ function goNextMonth() {
         document.getElementById('addMonthModal').style.display = 'flex';
     }
     
-    function addNewMonth() {
-        const month = parseInt(document.getElementById('newMonth').value);
-        const year = parseInt(document.getElementById('newYear').value);
-        const key = getMonthKey(year, month);
+function addNewMonth() {
+    const month = parseInt(document.getElementById('newMonth').value);
+    const year = parseInt(document.getElementById('newYear').value);
+    
+    // Prevent adding months that are in the past
+    if (isDateLocked(year, month)) {
+        showMonthLockedPopup(month, year);
+        return;
+    }
+    
+    const key = getMonthKey(year, month);
         
         if (monthlyData[key]) {
             showPopup(`${georgianMonths[month]} ${year} უკვე არსებობს!`, "error");
@@ -2328,6 +2356,14 @@ function saveSelectedDates() {
     }
     
     const { year, month } = nextMonthTarget;
+    
+    // Check if this month is locked
+    if (isDateLocked(year, month)) {
+        showMonthLockedPopup(month, year);
+        closeModal('addShiftModal');
+        return;
+    }
+    
     const key = getMonthKey(year, month);
     
     if (!monthlyData[key]) {
@@ -2872,6 +2908,14 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
 }
 
 function updateActualAmount(monthKey, amount) {
+    const [year, month] = monthKey.split('-').map(Number);
+    
+    // Check if this month is locked
+    if (isDateLocked(year, month)) {
+        showMonthLockedPopup(month, year);
+        return;
+    }
+    
     if (monthlyData[monthKey]) {
         monthlyData[monthKey].actualAmount = parseFloat(amount) || 0;
         saveData();
@@ -2879,7 +2923,15 @@ function updateActualAmount(monthKey, amount) {
     }
 }
     
-    function deleteMonth(monthKey, monthName) {
+function deleteMonth(monthKey, monthName) {
+    const [year, month] = monthKey.split('-').map(Number);
+    
+    // Check if this month is locked
+    if (isDateLocked(year, month)) {
+        showMonthLockedPopup(month, year);
+        return;
+    }
+    
     let overlay = document.getElementById('deleteMonthOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -2966,6 +3018,42 @@ function login() {
         loginContainer.classList.add('error-animation');
         setTimeout(() => loginContainer.classList.remove('error-animation'), 500);
     }
+}
+    
+// Check if a date is in the past and cannot be edited
+function isDateLocked(year, month, day = null) {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+    
+    // If we're checking a specific day
+    if (day !== null) {
+        // If the year is in the past
+        if (year < currentYear) return true;
+        // If same year but month is in the past
+        if (year === currentYear && month < currentMonth) return true;
+        // If same year and same month but day is in the past
+        if (year === currentYear && month === currentMonth && day < currentDay) return true;
+        return false;
+    }
+    
+    // If we're checking a whole month
+    if (year < currentYear) return true;
+    if (year === currentYear && month < currentMonth) return true;
+    return false;
+}
+
+// Show locked popup for day
+function showDateLockedPopup(day, month, year) {
+    const formattedDate = `${day.toString().padStart(2, '0')}.${(month+1).toString().padStart(2, '0')}.${year}`;
+    showToast(`${formattedDate}-ში ცვლილება შეუძლებელია, რადგან თარიღი დასრულდა.`, "error");
+}
+
+// Show locked popup for month
+function showMonthLockedPopup(month, year) {
+    const monthNames = ["იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი", "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"];
+    showToast(`${monthNames[month]} ${year}-ში ცვლილება შეუძლებელია, რადგან ეს თვე უკვე დასრულდა.`, "error");
 }
     
 function logout() {
