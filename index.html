@@ -1391,10 +1391,22 @@ thead tr:first-child th:first-child {
             </div>
         </div>
         
-        <div class="earning-panel">
+<div class="earning-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="flex: 1; text-align: center;">
             <div>მოსალოდნელი შემოსავალი ამ თვეს</div>
             <div class="total-earning" id="totalEarning">0.00 ₾</div>
         </div>
+        <div id="actualInfo" style="display: none; flex: 1; text-align: center;">
+            <div>ამ თვეს ჩარიცხული რეალური ხელფასი</div>
+            <div class="total-earning" id="actualEarning">0.00 ₾</div>
+        </div>
+        <div id="differenceInfo" style="display: none; flex: 1; text-align: center;">
+            <div>სხვაობა</div>
+            <div class="total-earning" id="differenceValue">0.00 ₾</div>
+        </div>
+    </div>
+</div>
         
         <div class="table-container">
             <table id="mainTable">
@@ -1675,6 +1687,7 @@ function calculateAndDisplayTotal() {
     
     if (!data) {
         document.getElementById('totalEarning').textContent = '0.00 ₾';
+        updateEarningPanelWithActual(); // Add this line
         return;
     }
     
@@ -1704,6 +1717,7 @@ function calculateAndDisplayTotal() {
     if (data.fitpass) total -= FITPASS_DEDUCTION;
     
     document.getElementById('totalEarning').textContent = total.toFixed(2) + ' ₾';
+    updateEarningPanelWithActual(); // Add this line
 }
   
   function showToast(message, type = "info") {
@@ -1933,6 +1947,66 @@ function showCustomHoursInput(year, month, day) {
     document.getElementById('cancelCustomHours').onclick = () => {
         overlay.style.display = 'none';
     };
+}
+
+function updateEarningPanelWithActual() {
+    const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
+    const data = monthlyData[key];
+    
+    // Calculate expected amount
+    let expectedTotal = 0;
+    const dutyRate = getDutyRate(currentDisplayYear, currentDisplayMonth);
+    const obsRate = getObsRate(currentDisplayYear, currentDisplayMonth);
+    
+    if (data && data.shifts) {
+        Object.values(data.shifts).forEach(shift => {
+            expectedTotal += (shift.duty * dutyRate);
+            expectedTotal += (shift.obs * obsRate);
+            expectedTotal += (shift.trans * TRANS_RATE);
+            expectedTotal += (shift.station * STATION_RATE);
+        });
+    }
+    
+    if (data && data.extras) {
+        Object.values(data.extras).forEach(extra => {
+            expectedTotal += (extra.obs * obsRate);
+            expectedTotal += (extra.trans * TRANS_RATE);
+            expectedTotal += (extra.station * STATION_RATE);
+        });
+    }
+    
+    if (data && data.insurance) expectedTotal -= INSURANCE_DEDUCTION;
+    if (data && data.fitpass) expectedTotal -= FITPASS_DEDUCTION;
+    
+    const actualAmount = (data && data.actualAmount) || 0;
+    const actualInfoDiv = document.getElementById('actualInfo');
+    const differenceInfoDiv = document.getElementById('differenceInfo');
+    const actualEarningSpan = document.getElementById('actualEarning');
+    const differenceSpan = document.getElementById('differenceValue');
+    
+    // Show actual info only if actual amount exists (>0)
+    if (actualAmount > 0) {
+        actualInfoDiv.style.display = 'block';
+        differenceInfoDiv.style.display = 'block';
+        actualEarningSpan.textContent = actualAmount.toFixed(2) + ' ₾';
+        
+        const difference = actualAmount - expectedTotal;
+        const differenceAbs = Math.abs(difference).toFixed(2);
+        
+        if (difference > 0) {
+            differenceSpan.textContent = `+${differenceAbs} ₾`;
+            differenceSpan.style.color = '#27ae60';
+        } else if (difference < 0) {
+            differenceSpan.textContent = `-${differenceAbs} ₾`;
+            differenceSpan.style.color = '#e74c3c';
+        } else {
+            differenceSpan.textContent = `0 ₾`;
+            differenceSpan.style.color = 'white';
+        }
+    } else {
+        actualInfoDiv.style.display = 'none';
+        differenceInfoDiv.style.display = 'none';
+    }
 }
 
 function showConfirmChangePopup(year, month, day, currentValue) {
@@ -2803,17 +2877,67 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
                 </div>
 <div style="padding: 20px 20px 15px 20px; border-top: 1px solid #e2edf2; text-align: right;">
     <div style="font-size: 16px; display: flex; align-items: center; justify-content: flex-end; gap: 20px; flex-wrap: wrap;">
-        <div>
-            <span style="font-weight: 600;">მოსალოდნელი:</span>
-            <span style="color: #e74c3c; font-weight: 800; font-size: 18px; margin-left: 8px;">${expected.toFixed(2)} ₾</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight: 600;">ჩარიცხული:</span>
-            <span id="actualAmountDisplay_${key.replace(/-/g, '_')}" style="color: #27ae60; font-weight: 800; font-size: 18px; cursor: pointer;" onclick="promptActualAmount('${key}', ${actualAmount})">${actualAmount.toFixed(2)} ₾</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px; padding-left: 20px; border-left: 2px solid #e2edf2;">
-            <span style="font-weight: 600;"></span>
-            ${(() => {
+<div>
+    <span style="font-weight: 600;">მოსალოდნელი:</span>
+    <span style="color: #e74c3c; font-weight: 800; font-size: 18px; margin-left: 8px;">
+        ${expected.toFixed(2)} ₾
+    </span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+    <span style="font-weight: 600;">ჩარიცხული:</span>
+    <span id="actualAmountDisplay_${key.replace(/-/g, '_')}" style="color: #27ae60; font-weight: 800; font-size: 18px; cursor: pointer;" onclick="promptActualAmount('${key}', ${actualAmount})">
+    ${(() => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        
+        // Check if this is the immediate previous month
+        const isPreviousMonth = (year === currentYear && month === currentMonth - 1) || 
+                                (month === 11 && year === currentYear - 1 && currentMonth === 0);
+        
+        // Current month - show "-"
+        if (year === currentYear && month === currentMonth) {
+            return `-`;
+        }
+        // Previous month - show "მოლოდინში" if amount is 0
+        else if (isPreviousMonth) {
+            if (actualAmount === 0) {
+                return `მოლოდინში`;
+            } else {
+                return `${actualAmount.toFixed(2)} ₾`;
+            }
+        }
+        // Past month older than previous month - show amount or 0
+        else {
+            if (actualAmount === 0) {
+                return `0.00 ₾`;
+            } else {
+                return `${actualAmount.toFixed(2)} ₾`;
+            }
+        }
+    })()}
+    </span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding-left: 20px; border-left: 2px solid #e2edf2;">
+    <span style="font-weight: 600;"></span>
+    ${(() => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        
+        // Check if this is the immediate previous month
+        const isPreviousMonth = (year === currentYear && month === currentMonth - 1) || 
+                                (month === 11 && year === currentYear - 1 && currentMonth === 0);
+        
+        // Current month - don't show difference
+        if (year === currentYear && month === currentMonth) {
+            return `<span style="color: #95a5a6; font-weight: 800; font-size: 18px;">-</span>`;
+        }
+        // Previous month - show difference only if actual amount is entered
+        else if (isPreviousMonth) {
+            if (actualAmount === 0) {
+                return `<span style="color: #95a5a6; font-weight: 800; font-size: 18px;">-</span>`;
+            } else {
                 const difference = actualAmount - expected;
                 const absDifference = Math.abs(difference).toFixed(2);
                 if (difference > 0) {
@@ -2823,8 +2947,26 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
                 } else {
                     return `<span style="color: #4a5568; font-weight: 800; font-size: 18px;">0 ₾</span>`;
                 }
-            })()}
-        </div>
+            }
+        }
+        // Past month older than previous month - show difference if amount exists
+        else {
+            if (actualAmount === 0) {
+                return `<span style="color: #95a5a6; font-weight: 800; font-size: 18px;">-</span>`;
+            } else {
+                const difference = actualAmount - expected;
+                const absDifference = Math.abs(difference).toFixed(2);
+                if (difference > 0) {
+                    return `<span style="color: #27ae60; font-weight: 800; font-size: 18px;">+${absDifference} ₾</span>`;
+                } else if (difference < 0) {
+                    return `<span style="color: #e74c3c; font-weight: 800; font-size: 18px;">-${absDifference} ₾</span>`;
+                } else {
+                    return `<span style="color: #4a5568; font-weight: 800; font-size: 18px;">0 ₾</span>`;
+                }
+            }
+        }
+    })()}
+</div>
     </div>
 <div style="display: flex; gap: 20px; justify-content: flex-end; font-size: 13px; color: #4a5568; padding-top: 10px; margin-top: 10px; border-top: 1px dashed #e2edf2;">
     <span style="display: inline-flex; align-items: center; gap: 6px;">
@@ -2856,70 +2998,95 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
     document.getElementById('otherMonthsModal').style.display = 'flex';
 }
     
-    function promptActualAmount(monthKey, currentAmount) {
-    let overlay = document.getElementById('actualAmountOverlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'actualAmountOverlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
-        overlay.style.backdropFilter = 'blur(5px)';
-        overlay.style.zIndex = '3000';
-        overlay.style.display = 'flex';
-        overlay.style.alignItems = 'center';
-        overlay.style.justifyContent = 'center';
-        document.body.appendChild(overlay);
+function promptActualAmount(monthKey, currentAmount) {
+    const [year, month] = monthKey.split('-').map(Number);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    // Check if this is current month
+    const isCurrentMonth = (year === currentYear && month === currentMonth);
+    // Check if this is previous month
+    const isPreviousMonth = (year === currentYear && month === currentMonth - 1) ||
+                            (month === 11 && year === currentYear - 1 && currentMonth === 0);
+    
+    // For current month - can't edit
+    if (isCurrentMonth) {
+        showToast("ჩარიცხული ხელფასის შეტანა შესაძლებელია მომდევნო თვეში", "error");
+        return;
     }
     
-    overlay.innerHTML = `
-        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
-            <h3 style="margin-bottom: 20px; font-size: 24px; color: #1f6e8c;">თანხის შეცვლა</h3>
-            <p style="margin-bottom: 15px; color: #4a5568;">მიმდინარე მნიშვნელობა: <strong>${currentAmount.toFixed(2)} ₾</strong></p>
-            <input type="number" id="newActualAmount" step="0.01" min="0" value="${currentAmount}" 
-                   style="width: 80%; padding: 14px; border-radius: 50px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; margin-bottom: 20px;" 
-                   placeholder="თანხა ₾">
-            <div>
-                <button id="saveActualAmount" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">შენახვა</button>
-                <button id="cancelActualAmount" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
-            </div>
-        </div>
-    `;
-    
-    overlay.style.display = 'flex';
-    
-    document.getElementById('saveActualAmount').onclick = () => {
-        const newAmount = parseFloat(document.getElementById('newActualAmount').value);
-        if (!isNaN(newAmount) && newAmount >= 0) {
-            updateActualAmount(monthKey, newAmount);
-            overlay.style.display = 'none';
-            showPopup("ჩარიცხული თანხა განახლდა!", "success");
-        } else {
-            showPopup("გთხოვთ შეიყვანოთ სწორი თანხა", "error");
+    // For previous month - allow editing regardless of current amount
+    if (isPreviousMonth) {
+        let overlay = document.getElementById('actualAmountOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'actualAmountOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            overlay.style.backdropFilter = 'blur(5px)';
+            overlay.style.zIndex = '3000';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            document.body.appendChild(overlay);
         }
-    };
+        
+        overlay.innerHTML = `
+            <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+                <h3 style="margin-bottom: 20px; font-size: 24px; color: #1f6e8c;">ჩარიცხული თანხის ${currentAmount > 0 ? 'შეცვლა' : 'დამატება'}</h3>
+                <p style="margin-bottom: 15px; color: #4a5568;">თვე: <strong>${georgianMonths[month]} ${year}</strong></p>
+                <input type="number" id="newActualAmount" step="0.01" min="0" value="${currentAmount}" 
+                       style="width: 80%; padding: 14px; border-radius: 50px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; margin-bottom: 20px;" 
+                       placeholder="თანხა ₾">
+                <div>
+                    <button id="saveActualAmount" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">შენახვა</button>
+                    <button id="cancelActualAmount" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+                </div>
+            </div>
+        `;
+        
+        overlay.style.display = 'flex';
+        
+        document.getElementById('saveActualAmount').onclick = () => {
+            const newAmount = parseFloat(document.getElementById('newActualAmount').value);
+            if (!isNaN(newAmount) && newAmount >= 0) {
+                updateActualAmount(monthKey, newAmount);
+                overlay.style.display = 'none';
+const message = currentAmount > 0 ? "ჩარიცხული თანხა განახლდა!" : "ჩარიცხული თანხა დაემატა!";
+showToast(message, "success");
+} else {
+                showToast("გთხოვთ შეიყვანოთ სწორი თანხა", "error");
+            }
+        };
+        
+        document.getElementById('cancelActualAmount').onclick = () => {
+            overlay.style.display = 'none';
+        };
+        return;
+    }
     
-    document.getElementById('cancelActualAmount').onclick = () => {
-        overlay.style.display = 'none';
-    };
+    // For other past months (march and earlier) - can't edit
+    showToast("ამ თვის ჩარიცხული თანხის შეცვლა შეუძლებელია", "error");
 }
 
 function updateActualAmount(monthKey, amount) {
     const [year, month] = monthKey.split('-').map(Number);
     
-    // Check if this month is locked
-    if (isDateLocked(year, month)) {
-        showMonthLockedPopup(month, year);
-        return;
-    }
-    
     if (monthlyData[monthKey]) {
         monthlyData[monthKey].actualAmount = parseFloat(amount) || 0;
         saveData();
-        showOtherMonthsModal();
+        showOtherMonthsModal(); // Refresh the modal
+        
+        // Add these lines to refresh current month display if needed
+        if (currentDisplayYear === year && currentDisplayMonth === month) {
+            calculateAndDisplayTotal();
+            updateEarningPanelWithActual();
+        }
     }
 }
     
@@ -3020,20 +3187,38 @@ function login() {
     }
 }
     
-// Check if a date is in the past and cannot be edited
-function isDateLocked(year, month, day = null) {
+function isDateLocked(year, month, day = null, type = 'shift') {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     const currentDay = now.getDate();
     
-    // If we're checking a specific day
-    if (day !== null) {
-        // If the year is in the past
+    // For actualAmount (salary) in the modal - allow editing for previous month only
+    if (type === 'actualAmount') {
+        // Allow editing ONLY for the immediate previous month
+        const isPreviousMonth = (year === currentYear && month === currentMonth - 1) ||
+                                (month === 11 && year === currentYear - 1 && currentMonth === 0);
+        
+        // If it's the previous month, allow editing
+        if (isPreviousMonth) {
+            return false;
+        }
+        
+        // Future months - block
+        if (year > currentYear) return true;
+        if (year === currentYear && month > currentMonth) return true;
+        
+        // All other past months - block (march and earlier)
         if (year < currentYear) return true;
-        // If same year but month is in the past
         if (year === currentYear && month < currentMonth) return true;
-        // If same year and same month but day is in the past
+        
+        return false;
+    }
+    
+    // For shifts - lock past dates as before
+    if (day !== null) {
+        if (year < currentYear) return true;
+        if (year === currentYear && month < currentMonth) return true;
         if (year === currentYear && month === currentMonth && day < currentDay) return true;
         return false;
     }
