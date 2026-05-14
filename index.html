@@ -1318,6 +1318,85 @@ thead tr:first-child th:first-child {
     font-weight: bold;
 }
 
+
+.pin-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 40px;
+    border-radius: 48px;
+    z-index: 4000;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 30px 55px rgba(0, 0, 0, 0.3);
+    display: none;
+    pointer-events: auto;
+}
+
+.blur-background {
+    filter: blur(5px);
+    pointer-events: none;
+    transition: filter 0.3s ease;
+    user-select: none;
+}
+
+.pin-popup h3 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #1f6e8c;
+}
+
+.pin-input-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 25px 0;
+}
+
+.pin-digit {
+    width: 55px;
+    height: 65px;
+    font-size: 28px;
+    text-align: center;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    font-weight: 700;
+    background: white;
+    font-family: monospace;
+}
+
+.pin-digit:focus {
+    border-color: #1f6e8c;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(31, 110, 140, 0.2);
+}
+
+.pin-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.pin-buttons button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 40px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pin-submit-btn {
+    background: linear-gradient(135deg, #27ae60, #1e8449);
+    color: white;
+    border: none;
+}
+
+.pin-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
     </style>
 </head>
 <body>
@@ -1359,8 +1438,15 @@ thead tr:first-child th:first-child {
 </div>
 
 <div class="main-container" id="mainApp">
-    <div class="main-header" id="mainHeader">
-<h1 onclick="refreshData()" style="cursor: pointer;"><i class="fas fa-calculator"></i>ShogiCalc.</h1>
+<div class="main-header" id="mainHeader">
+    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <h1 onclick="refreshData()" style="cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-calculator"></i>ShogiCalc.
+        </h1>
+        <div id="timerDisplay" style="background: rgba(31, 110, 140, 0.1); padding: 6px 14px; border-radius: 50px; font-size: 14px; font-weight: 600; color: #1f6e8c; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-hourglass-half"></i> <span id="timerSeconds">20</span> წმ
+        </div>
+    </div>
 </div>
     
     <button class="logout-btn" onclick="logout()">
@@ -1515,6 +1601,16 @@ thead tr:first-child th:first-child {
 
 <div class="toast-container" id="toastContainer"></div>
 
+<div class="pin-popup" id="pinPopup">
+    <h3><i class="fas fa-lock"></i> ShogiCalc</h3>
+    <p style="margin-bottom: 20px; color: #666;">შეიტანეთ PIN კოდი</p>
+    <div class="pin-input-container">
+        <input type="password" id="pinDigit1" class="pin-digit" maxlength="1" autocomplete="off">
+        <input type="password" id="pinDigit2" class="pin-digit" maxlength="1" autocomplete="off">
+        <input type="password" id="pinDigit3" class="pin-digit" maxlength="1" autocomplete="off">
+        <input type="password" id="pinDigit4" class="pin-digit" maxlength="1" autocomplete="off">
+    </div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -1657,6 +1753,9 @@ function loadData() {
             }
             showLoader(false);
             renderCurrentMonth();
+            
+            // CHANGE THIS:
+            startCountdown();
         })
         .catch((error) => {
             console.error("Load error:", error);
@@ -1664,6 +1763,9 @@ function loadData() {
             monthlyData = {};
             renderCurrentMonth();
             showPopup("მონაცემების ჩატვირთვა ვერ მოხერხდა!", "error");
+            
+            // CHANGE THIS:
+            startCountdown();
         });
 }
     
@@ -2158,6 +2260,156 @@ function printOtherMonths() {
         document.body.removeChild(printContainer);
     }, 100);
 }
+
+let idleTimer;
+let isPopupActive = false;
+const IDLE_TIMEOUT = 20000; // 20 seconds
+let countdownInterval;
+let remainingSeconds = 20;
+
+function updateTimerDisplay(seconds) {
+    const timerSpan = document.getElementById('timerSeconds');
+    if (timerSpan) {
+        timerSpan.textContent = seconds;
+        if (seconds <= 5) {
+            timerSpan.style.color = '#e74c3c';
+            timerSpan.style.fontWeight = 'bold';
+        } else {
+            timerSpan.style.color = '#1f6e8c';
+            timerSpan.style.fontWeight = 'normal';
+        }
+    }
+}
+
+function startCountdown() {
+    stopCountdown();
+    remainingSeconds = 20;
+    updateTimerDisplay(remainingSeconds);
+    
+    countdownInterval = setInterval(() => {
+        if (!isPopupActive && document.getElementById('loginPage').style.display === 'none') {
+            remainingSeconds--;
+            updateTimerDisplay(remainingSeconds);
+            
+            if (remainingSeconds <= 0) {
+                stopCountdown();
+                showPinPopup();
+            }
+        }
+    }, 1000);
+}
+
+function stopCountdown() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+}
+
+function resetIdleTimer() {
+    if (isPopupActive) return;
+    if (document.getElementById('loginPage').style.display !== 'none') return;
+    
+    stopCountdown();
+    startCountdown();
+}
+
+function showPinPopup() {
+    // Don't show if not logged in or popup already showing
+    if (document.getElementById('loginPage').style.display !== 'none') return;
+    if (isPopupActive) return;
+    
+    isPopupActive = true;
+    stopCountdown();
+    
+    // Add blur to main container
+    const mainApp = document.getElementById('mainApp');
+    mainApp.classList.add('blur-background');
+    
+    // Show popup
+    const pinPopup = document.getElementById('pinPopup');
+    pinPopup.style.display = 'block';
+    
+    // Clear and focus on first digit
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById(`pinDigit${i}`).value = '';
+    }
+    document.getElementById('pinDigit1').focus();
+    
+    // Add input event listeners for auto-tab and auto-submit
+    for (let i = 1; i <= 4; i++) {
+        const digit = document.getElementById(`pinDigit${i}`);
+        digit.oninput = function(e) {
+            if (this.value.length === 1 && i < 4) {
+                document.getElementById(`pinDigit${i+1}`).focus();
+            }
+            // Auto-submit when 4th digit is entered
+            if (i === 4 && this.value.length === 1) {
+                verifyPin();
+            }
+        };
+        digit.onkeydown = function(e) {
+            if (e.key === 'Backspace' && this.value.length === 0 && i > 1) {
+                document.getElementById(`pinDigit${i-1}`).focus();
+            }
+            if (e.key === 'Enter') {
+                verifyPin();
+            }
+        };
+    }
+}
+
+function hidePinPopup() {
+    const mainApp = document.getElementById('mainApp');
+    mainApp.classList.remove('blur-background');
+    
+    const pinPopup = document.getElementById('pinPopup');
+    pinPopup.style.display = 'none';
+    
+    isPopupActive = false;
+    
+    // Reset and restart timer
+    startCountdown();
+}
+
+function verifyPin() {
+    // Get entered PIN
+    const pin = `${document.getElementById('pinDigit1').value}${document.getElementById('pinDigit2').value}${document.getElementById('pinDigit3').value}${document.getElementById('pinDigit4').value}`;
+    const CORRECT_PIN = "2911";
+    
+    if (pin === CORRECT_PIN) {
+        showToast("PIN კოდი სწორია", "success");
+        hidePinPopup();
+        // Dashboard is already visible but was blurred, now unblurred by hidePinPopup()
+    } else {
+        showToast("PIN კოდი არასწორია!", "error");
+        // Clear all digits
+        for (let i = 1; i <= 4; i++) {
+            document.getElementById(`pinDigit${i}`).value = '';
+        }
+        document.getElementById('pinDigit1').focus();
+        // Dashboard stays blurred, user cannot access until correct PIN
+    }
+}
+
+// Track user activity
+function trackActivity() {
+    if (document.getElementById('loginPage').style.display !== 'none') return;
+    if (!isPopupActive) {
+        resetIdleTimer();
+    }
+}
+
+// Add event listeners for activity tracking
+document.addEventListener('click', trackActivity);
+document.addEventListener('keypress', trackActivity);
+document.addEventListener('mousemove', trackActivity);
+document.addEventListener('scroll', trackActivity);
+
+// Also track activity on inputs and buttons
+document.addEventListener('input', trackActivity);
+document.addEventListener('change', trackActivity);
+
 
 function renderCurrentMonth() {
     if (currentDisplayYear === undefined || currentDisplayMonth === undefined) {
@@ -3175,7 +3427,9 @@ function login() {
         
         document.getElementById('currentMonthLabel').textContent = `${georgianMonths[currentDisplayMonth]} ${currentDisplayYear}`;
         
-        localStorage.setItem('isLoggedIn', 'true');
+
+        // CHANGE THIS LINE:
+        startCountdown();
     } else {
         showPopup("მომხმარებლის სახელი ან პაროლი არასწორია!", "error");
         document.getElementById('password').value = '';
@@ -3240,7 +3494,7 @@ function showMonthLockedPopup(month, year) {
     const monthNames = ["იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი", "ივლისი", "აგვისტო", "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი"];
     showToast(`${monthNames[month]} ${year}-ში ცვლილება შეუძლებელია, რადგან ეს თვე უკვე დასრულდა.`, "error");
 }
-    
+
 function logout() {
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('mainApp').style.display = 'none';
@@ -3248,6 +3502,10 @@ function logout() {
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     monthlyData = {};
+    
+    // CHANGE THIS:
+    stopCountdown();
+    isPopupActive = false;
 }
     
     function addEnterKeySupport() {
@@ -3271,27 +3529,19 @@ function logout() {
     }
     
 function checkAutoLogin() {
-    const savedLogin = localStorage.getItem('isLoggedIn');
-    if (savedLogin === 'true') {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        loadData();
-        
-        const today = new Date();
-        currentDisplayYear = today.getFullYear();
-        currentDisplayMonth = today.getMonth();
-        
-        document.getElementById('currentMonthLabel').textContent = `${georgianMonths[currentDisplayMonth]} ${currentDisplayYear}`;
-        
-    }
+    // Always show login page on refresh - no auto-login
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    
+    // Clear any saved login
+    localStorage.removeItem('isLoggedIn');
 }
     
 window.onload = function() {
     addEnterKeySupport();
-    checkAutoLogin();
-    
-    const today = new Date();
 
+    
+    checkAutoLogin();
     
     const prevBtn = document.getElementById('prevMonthBtn');
     const nextBtn = document.getElementById('nextMonthBtn');
