@@ -580,17 +580,6 @@ td, th {
                 transform: scale(1) translateY(0);
             }
         }
-        
-        @keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
 
 #otherMonthsModal {
     align-items: flex-start !important;
@@ -851,16 +840,15 @@ tr:first-child td:not(.type-header) {
     height: 50px;
 }
 
+/* შეცვალეთ ეს სტილი: */
 .shift-cell {
-    background-color: #2b7a4b !important;
+    background-color: #48bb78 !important; /* უფრო ღია მწვანე */
     color: white !important;
-    cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .shift-cell:hover {
-    background-color: #1e5a38 !important;
-    transform: scale(1.02);
+    background-color: #38a169 !important; /* ჰოვერზე ოდნავ მუქი */
 }
 
 .popup-box {
@@ -1080,7 +1068,6 @@ tr:first-child td:not(.type-header) {
     }
 }
 
-
 @media print {
     .no-print {
         display: none !important;
@@ -1138,11 +1125,6 @@ tbody td:first-child {
 
 tbody tr td:first-child {
     background: #e9f0f5;
-    font-weight: 800;
-}
-
-tbody tr td:first-child {
-    background: #e9f0f5 !important;
     font-weight: 800;
 }
 
@@ -1318,7 +1300,6 @@ thead tr:first-child th:first-child {
     font-weight: bold;
 }
 
-
 .pin-popup {
     position: fixed;
     top: 50%;
@@ -1397,6 +1378,73 @@ thead tr:first-child th:first-child {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
 }
+
+#expensesModal {
+    padding: 0.2cm;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+}
+
+#expensesModal .modal-content {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.expense-dashboard {
+    background: linear-gradient(135deg, #1f6e8c, #0a5c78);
+    color: white;
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(31, 110, 140, 0.2);
+}
+
+.expense-stat {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 5px 0 15px 0;
+}
+
+.expense-daily {
+    font-size: 34px;
+    color: #2ecc71;
+    font-weight: 900;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ხარჯების ცხრილის სიმაღლეში გაზრდა */
+#expensesModal > .modal-content > div:nth-child(3) {
+    min-height: 60vh;
+}
+
+/* თარიღის სვეტის გაყინვა სქროლვისას */
+#expensesTableBody td:first-child,
+#expensesModal thead th:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 15 !important;
+}
+
+#expensesModal thead th:first-child {
+    background: #e9f0f5 !important;
+    z-index: 20 !important;
+}
+
+#expensesTableBody td:first-child {
+    background: white !important; 
+    border-right: 2px solid #e2edf2; /* ვიზუალური საზღვარი სქროლვისთვის */
+}
+
+
     </style>
 </head>
 <body>
@@ -1475,6 +1523,10 @@ thead tr:first-child th:first-child {
                     <i class="fas fa-calendar-alt"></i> ყველა მონაცემი
                 </button>
             </div>
+
+            <button class="enhanced-control-btn enhanced-control-btn-danger" style="background: linear-gradient(135deg, #e74c3c, #c0392b);" onclick="openExpensesModal()">
+    <i class="fas fa-wallet"></i> ხარჯები
+</button>
         </div>
         
 <div class="earning-panel">
@@ -1599,6 +1651,84 @@ thead tr:first-child th:first-child {
     <button onclick="closePopup()">კარგი</button>
 </div>
 
+<div class="modal" id="expensesModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-wallet"></i> ბიუჯეტი და ხარჯები</h3>
+            <button onclick="closeModal('expensesModal')"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="expense-dashboard">
+            <p style="opacity: 0.8; font-size: 14px;">ბოლო ჩარიცხული ხელფასი</p>
+            <div class="expense-stat" id="expLastSalary">0.00 ₾</div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
+                <div>
+                    <p style="opacity: 0.8; font-size: 12px;">ხელფასამდე დარჩა</p>
+                    <div class="expense-stat" style="font-size: 20px;" id="expDaysLeft">0 დღე</div>
+                </div>
+                <div>
+                    <p style="opacity: 0.8; font-size: 12px;">დარჩენილი თანხა</p>
+                    <div class="expense-stat" style="font-size: 20px; color: #f1c40f;" id="expRemaining">0.00 ₾</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px;">
+                <p style="opacity: 0.9; font-size: 14px; font-weight: bold;">დღიური ლიმიტი</p>
+                <div class="expense-daily" id="expDailyLimit">0.00 ₾</div>
+            </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 20px; border: 1px solid #e2edf2; margin-bottom: 15px; flex-shrink: 0;">
+                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 14px;">ხარჯის დამატება</h4>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <input type="number" id="newExpenseAmount" placeholder="თანხა (₾)" style="flex: 1; min-width: 100px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
+
+<!-- ეს არის სუფთა და სწორი ვერსია -->
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <input type="datetime-local" id="newExpenseDate" style="flex: 1; min-width: 140px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 14px;">
+    <input type="number" id="newExpenseAmount" placeholder="თანხა (₾)" style="flex: 1; min-width: 100px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
+    <input type="text" id="newExpenseDesc" placeholder="აღწერა (სურვილისამებრ)" style="flex: 2; min-width: 140px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
+    <button onclick="addExpense()" style="background: #27ae60; color: white; border: none; padding: 0 20px; border-radius: 10px; font-weight: bold; cursor: pointer; min-height: 44px;"><i class="fas fa-plus"></i></button>
+</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; flex-wrap: wrap; gap: 10px;">
+                <span style="font-weight: bold; color: #4a5568; font-size: 14px;">ჯამური: <span id="expTotalSpent" style="color: #e74c3c;">0.00 ₾</span></span>
+            </div>
+
+            <div style="overflow-x: auto; background: white; border-radius: 15px; border: 1px solid #e2edf2; flex: 1; overflow-y: auto; margin-bottom: 15px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 450px; font-size: 13px;">
+                    <thead style="background: #e9f0f5; position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th onclick="sortExpenses('timestamp')" style="padding: 10px 15px; text-align: left; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
+                                თარიღი <i class="fas fa-sort" id="sortIcon_timestamp" style="margin-left: 5px; color: #a0aec0;"></i>
+                            </th>
+                            <th onclick="sortExpenses('desc')" style="padding: 10px 15px; text-align: left; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
+                                აღწერა <i class="fas fa-sort" id="sortIcon_desc" style="margin-left: 5px; color: #a0aec0;"></i>
+                            </th>
+                            <th onclick="sortExpenses('amount')" style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
+                                თანხა <i class="fas fa-sort" id="sortIcon_amount" style="margin-left: 5px; color: #a0aec0;"></i>
+                            </th>
+                            <th onclick="sortExpenses('balanceAfter')" style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
+                                ნაშთი <i class="fas fa-sort" id="sortIcon_balanceAfter" style="margin-left: 5px; color: #a0aec0;"></i>
+                            </th>
+                            <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <button onclick="resetExpenses()" style="width: 100%; padding: 14px; border: none; border-radius: 10px; background: #e2e8f0; color: #4a5568; font-weight: bold; cursor: pointer; flex-shrink: 0;">
+                <i class="fas fa-undo"></i> ციკლის ხელით განულება
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <div class="pin-popup" id="pinPopup">
@@ -1710,9 +1840,307 @@ let nextMonthTarget = null;
     return null;
 }
 
+function getNextSalaryDate() {
+    const today = new Date();
+    let year = today.getFullYear();
+    let month = today.getMonth();
+
+    let salaryDate = new Date(year, month, 20);
+    if (salaryDate.getDay() === 6) salaryDate = new Date(year, month, 19);
+    if (salaryDate.getDay() === 0) salaryDate = new Date(year, month, 18);
+
+    today.setHours(0,0,0,0);
+    salaryDate.setHours(0,0,0,0);
+
+    if (today >= salaryDate) {
+        month++;
+        if (month > 11) { month = 0; year++; }
+        salaryDate = new Date(year, month, 20);
+        if (salaryDate.getDay() === 6) salaryDate = new Date(year, month, 19);
+        if (salaryDate.getDay() === 0) salaryDate = new Date(year, month, 18);
+    }
+    return salaryDate;
+}
+
+function getDaysUntilSalary() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const nextDate = getNextSalaryDate();
+    const diffTime = Math.abs(nextDate - today);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 0 ? 1 : diffDays;
+}
+
+function getLastActualSalary() {
+const sortedKeys = Object.keys(monthlyData)
+    .filter(key => key.includes('-'))
+    .sort((a, b) => {
+              const [yA, mA] = a.split('-').map(Number);
+        const [yB, mB] = b.split('-').map(Number);
+        if (yA !== yB) return yB - yA;
+        return mB - mA;
+    });
+
+    for (let key of sortedKeys) {
+        if (monthlyData[key] && monthlyData[key].actualAmount > 0) {
+            return monthlyData[key].actualAmount;
+        }
+    }
+    return 0; 
+}
+
+function openExpensesModal() {
+    document.getElementById('expensesModal').style.display = 'flex';
+    renderExpensesList();
+}
+
+let currentSortCol = 'timestamp';
+let currentSortAsc = false;
+
+function sortExpenses(column) {
+    if (currentSortCol === column) {
+        currentSortAsc = !currentSortAsc;
+    } else {
+        currentSortCol = column;
+        currentSortAsc = (column === 'desc') ? true : false; 
+    }
+    renderExpensesList();
+}
+
+function renderExpensesList() {
+    const lastSalary = getLastActualSalary();
+    let expArray = [];
+    let totalSpent = 0;
+
+    if (monthlyData.expenses_list) {
+        Object.keys(monthlyData.expenses_list).forEach(key => {
+            expArray.push({ id: key, ...monthlyData.expenses_list[key] });
+        });
+    }
+
+    expArray.sort((a, b) => a.timestamp - b.timestamp);
+
+    let runningBalance = lastSalary;
+    expArray.forEach(exp => {
+        totalSpent += exp.amount;
+        runningBalance -= exp.amount;
+        exp.balanceAfter = runningBalance;
+    });
+
+    expArray.sort((a, b) => {
+        let valA = a[currentSortCol];
+        let valB = b[currentSortCol];
+        
+        if (currentSortCol === 'desc') {
+            valA = (valA || '').toLowerCase();
+            valB = (valB || '').toLowerCase();
+            if (valA < valB) return currentSortAsc ? -1 : 1;
+            if (valA > valB) return currentSortAsc ? 1 : -1;
+            return 0;
+        }
+        
+        return currentSortAsc ? (valA - valB) : (valB - valA);
+    });
+
+    ['timestamp', 'desc', 'amount', 'balanceAfter'].forEach(col => {
+        const icon = document.getElementById('sortIcon_' + col);
+        if (icon) {
+            if (currentSortCol === col) {
+                icon.className = currentSortAsc ? 'fas fa-sort-up' : 'fas fa-sort-down';
+                icon.style.color = '#1f6e8c';
+            } else {
+                icon.className = 'fas fa-sort';
+                icon.style.color = '#a0aec0';
+            }
+        }
+    });
+
+    let remaining = lastSalary - totalSpent;
+    if (remaining < 0) remaining = 0;
+    
+    const daysLeft = getDaysUntilSalary();
+    let dailyLimit = remaining / daysLeft;
+
+    document.getElementById('expLastSalary').textContent = lastSalary.toFixed(2) + ' ₾';
+    document.getElementById('expTotalSpent').textContent = totalSpent.toFixed(2) + ' ₾';
+    document.getElementById('expRemaining').textContent = remaining.toFixed(2) + ' ₾';
+    document.getElementById('expDaysLeft').textContent = daysLeft + ' დღე';
+    document.getElementById('expDailyLimit').textContent = dailyLimit.toFixed(2) + ' ₾';
+
+const dailyLimitEl = document.getElementById('expDailyLimit');
+    dailyLimitEl.textContent = dailyLimit.toFixed(2) + ' ₾';
+
+    // ფერების ლოგიკა
+// ფერების ლოგიკა (უფრო ნათელი და სასიამოვნო)
+    if (dailyLimit <= 10) {
+        dailyLimitEl.style.color = '#e53e3e'; // უფრო რბილი წითელი
+    } else if (dailyLimit > 10 && dailyLimit <= 15) {
+        dailyLimitEl.style.color = '#dd6b20'; // უფრო ღია ნარინჯისფერი
+    } else if (dailyLimit > 15 && dailyLimit < 20) {
+        dailyLimitEl.style.color = '#38a169'; // უფრო ნათელი მწვანე
+    } else {
+        dailyLimitEl.style.color = '#2f855a'; // გაწონასწორებული მწვანე
+    }
+    const tbody = document.getElementById('expensesTableBody');
+    tbody.innerHTML = '';
+
+    if(expArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #888; font-style: italic;">ხარჯები არ არის დამატებული</td></tr>`;
+    } else {
+        expArray.forEach(exp => {
+            const tr = document.createElement('tr');
+            
+            const dateObj = new Date(exp.timestamp);
+            const dateStr = `${dateObj.getDate().toString().padStart(2,'0')}.${(dateObj.getMonth()+1).toString().padStart(2,'0')} - ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
+
+            tr.innerHTML = `
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f1f5f9; color: #4a5568;">${dateStr}</td>
+                <td style="padding: 12px 15px; border-bottom: 1px solid #f1f5f9; color: #2d3748;">${exp.desc || '-'}</td>
+                <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; color: #e74c3c; font-weight: 800;">-${exp.amount.toFixed(2)}</td>
+                <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 800; color: ${exp.balanceAfter < 0 ? '#e74c3c' : '#27ae60'}">${exp.balanceAfter.toFixed(2)}</td>
+                <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                    <button onclick="deleteExpense('${exp.id}')" style="background: rgba(231, 76, 60, 0.1); border: none; color: #e74c3c; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: 0.2s;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+}
+
+function addExpense() {
+    const amountInput = document.getElementById('newExpenseAmount');
+    const descInput = document.getElementById('newExpenseDesc');
+    const dateInput = document.getElementById('newExpenseDate');
+    
+    const amount = parseFloat(amountInput.value);
+    const desc = descInput.value.trim();
+
+    if (isNaN(amount) || amount <= 0) {
+        showToast("შეიყვანეთ სწორი თანხა", "error");
+        return;
+    }
+
+    if (!monthlyData.expenses_list) monthlyData.expenses_list = {};
+    
+    const expenseId = 'exp_' + Date.now();
+    
+    // თუ თარიღი არჩეულია, ვიღებთ მას, თუ არა - ვიყენებთ მიმდინარე დროს
+    let timestamp = Date.now();
+    if (dateInput && dateInput.value) {
+        timestamp = new Date(dateInput.value).getTime();
+    }
+    
+    monthlyData.expenses_list[expenseId] = {
+        amount: amount,
+        desc: desc,
+        timestamp: timestamp
+    };
+
+    saveData();
+    amountInput.value = '';
+    descInput.value = '';
+    if (dateInput) dateInput.value = ''; // ვასუფთავებთ თარიღის ველს
+    
+    showToast("ხარჯი დაემატა!", "success");
+    renderExpensesList();
+}
+
+function deleteExpense(id) {
+    let overlay = document.getElementById('deleteSingleExpenseOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'deleteSingleExpenseOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3500'; 
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <i class="fas fa-trash-alt" style="font-size: 50px; color: #e74c3c; margin-bottom: 15px;"></i>
+            <h3 style="margin-bottom: 15px; color: #2d3748;">ხარჯის წაშლა</h3>
+            <p style="margin-bottom: 25px; color: #718096;">ნამდვილად გსურთ ამ ხარჯის წაშლა?</p>
+            <div>
+                <button id="confirmDelExpense" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">წაშლა</button>
+                <button id="cancelDelExpense" style="background: #e2e8f0; color: #4a5568; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('confirmDelExpense').onclick = () => {
+        delete monthlyData.expenses_list[id];
+        saveData();
+        showToast("ხარჯი წაიშალა", "info");
+        renderExpensesList();
+        overlay.style.display = 'none';
+    };
+    
+    document.getElementById('cancelDelExpense').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
+function resetExpenses() {
+    let overlay = document.getElementById('resetExpensesOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'resetExpensesOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = '3500';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+        <div style="background: white; border-radius: 40px; padding: 35px; width: 90%; max-width: 400px; text-align: center; animation: modalSlideIn 0.3s ease-out;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 50px; color: #e74c3c; margin-bottom: 15px;"></i>
+            <h3 style="margin-bottom: 15px; color: #2d3748;">ციკლის განულება</h3>
+            <p style="margin-bottom: 25px; color: #718096;">ნამდვილად გსურთ მიმდინარე ციკლის ყველა ხარჯის წაშლა?</p>
+            <div>
+                <button id="confirmReset" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">წაშლა</button>
+                <button id="cancelReset" style="background: #e2e8f0; color: #4a5568; border: none; padding: 12px 30px; border-radius: 50px; font-weight: 700; margin: 5px; cursor: pointer;">გაუქმება</button>
+            </div>
+        </div>
+    `;
+    
+    overlay.style.display = 'flex';
+    
+    document.getElementById('confirmReset').onclick = () => {
+        monthlyData.expenses_list = {};
+        saveData();
+        showToast("ხარჯები განულდა", "info");
+        renderExpensesList();
+        overlay.style.display = 'none';
+    };
+    
+    document.getElementById('cancelReset').onclick = () => {
+        overlay.style.display = 'none';
+    };
+}
+
 function saveData() {
     showLoader(true);
-    // Save to Firebase under user-specific path
     const userRef = database.ref(`users/${USERNAME}/monthlyData`);
     userRef.set(monthlyData)
         .then(() => {
@@ -1754,7 +2182,6 @@ function loadData() {
             showLoader(false);
             renderCurrentMonth();
             
-            // CHANGE THIS:
             startCountdown();
         })
         .catch((error) => {
@@ -1764,7 +2191,6 @@ function loadData() {
             renderCurrentMonth();
             showPopup("მონაცემების ჩატვირთვა ვერ მოხერხდა!", "error");
             
-            // CHANGE THIS:
             startCountdown();
         });
 }
@@ -1789,7 +2215,7 @@ function calculateAndDisplayTotal() {
     
     if (!data) {
         document.getElementById('totalEarning').textContent = '0.00 ₾';
-        updateEarningPanelWithActual(); // Add this line
+        updateEarningPanelWithActual(); 
         return;
     }
     
@@ -1819,7 +2245,7 @@ function calculateAndDisplayTotal() {
     if (data.fitpass) total -= FITPASS_DEDUCTION;
     
     document.getElementById('totalEarning').textContent = total.toFixed(2) + ' ₾';
-    updateEarningPanelWithActual(); // Add this line
+    updateEarningPanelWithActual(); 
 }
   
   function showToast(message, type = "info") {
@@ -1900,10 +2326,9 @@ function showPopup(message, type = "info") {
 }
 
 function updateShiftValue(day, field, value) {
-    // Check if this date is locked
     if (isDateLocked(currentDisplayYear, currentDisplayMonth, day)) {
         showDateLockedPopup(day, currentDisplayMonth, currentDisplayYear);
-        renderCurrentMonth(); // Re-render to restore original value
+        renderCurrentMonth(); 
         return;
     }
     
@@ -1952,7 +2377,6 @@ function handleShiftCellClick(year, month, day, currentValue) {
 }
 
 function showShiftTypePopup(year, month, day) {
-    // Check if this date is locked
     if (isDateLocked(year, month, day)) {
         showDateLockedPopup(day, month, year);
         return;
@@ -2055,7 +2479,6 @@ function updateEarningPanelWithActual() {
     const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
     const data = monthlyData[key];
     
-    // Calculate expected amount
     let expectedTotal = 0;
     const dutyRate = getDutyRate(currentDisplayYear, currentDisplayMonth);
     const obsRate = getObsRate(currentDisplayYear, currentDisplayMonth);
@@ -2086,7 +2509,6 @@ function updateEarningPanelWithActual() {
     const actualEarningSpan = document.getElementById('actualEarning');
     const differenceSpan = document.getElementById('differenceValue');
     
-    // Show actual info only if actual amount exists (>0)
     if (actualAmount > 0) {
         actualInfoDiv.style.display = 'block';
         differenceInfoDiv.style.display = 'block';
@@ -2263,7 +2685,7 @@ function printOtherMonths() {
 
 let idleTimer;
 let isPopupActive = false;
-const IDLE_TIMEOUT = 20000; // 20 seconds
+const IDLE_TIMEOUT = 20000;
 let countdownInterval;
 let remainingSeconds = 20;
 
@@ -2315,35 +2737,29 @@ function resetIdleTimer() {
 }
 
 function showPinPopup() {
-    // Don't show if not logged in or popup already showing
     if (document.getElementById('loginPage').style.display !== 'none') return;
     if (isPopupActive) return;
     
     isPopupActive = true;
     stopCountdown();
     
-    // Add blur to main container
     const mainApp = document.getElementById('mainApp');
     mainApp.classList.add('blur-background');
     
-    // Show popup
     const pinPopup = document.getElementById('pinPopup');
     pinPopup.style.display = 'block';
     
-    // Clear and focus on first digit
     for (let i = 1; i <= 4; i++) {
         document.getElementById(`pinDigit${i}`).value = '';
     }
     document.getElementById('pinDigit1').focus();
     
-    // Add input event listeners for auto-tab and auto-submit
     for (let i = 1; i <= 4; i++) {
         const digit = document.getElementById(`pinDigit${i}`);
         digit.oninput = function(e) {
             if (this.value.length === 1 && i < 4) {
                 document.getElementById(`pinDigit${i+1}`).focus();
             }
-            // Auto-submit when 4th digit is entered
             if (i === 4 && this.value.length === 1) {
                 verifyPin();
             }
@@ -2368,31 +2784,25 @@ function hidePinPopup() {
     
     isPopupActive = false;
     
-    // Reset and restart timer
     startCountdown();
 }
 
 function verifyPin() {
-    // Get entered PIN
     const pin = `${document.getElementById('pinDigit1').value}${document.getElementById('pinDigit2').value}${document.getElementById('pinDigit3').value}${document.getElementById('pinDigit4').value}`;
     const CORRECT_PIN = "2911";
     
     if (pin === CORRECT_PIN) {
         showToast("PIN კოდი სწორია", "success");
         hidePinPopup();
-        // Dashboard is already visible but was blurred, now unblurred by hidePinPopup()
     } else {
         showToast("PIN კოდი არასწორია!", "error");
-        // Clear all digits
         for (let i = 1; i <= 4; i++) {
             document.getElementById(`pinDigit${i}`).value = '';
         }
         document.getElementById('pinDigit1').focus();
-        // Dashboard stays blurred, user cannot access until correct PIN
     }
 }
 
-// Track user activity
 function trackActivity() {
     if (document.getElementById('loginPage').style.display !== 'none') return;
     if (!isPopupActive) {
@@ -2400,13 +2810,11 @@ function trackActivity() {
     }
 }
 
-// Add event listeners for activity tracking
 document.addEventListener('click', trackActivity);
 document.addEventListener('keypress', trackActivity);
 document.addEventListener('mousemove', trackActivity);
 document.addEventListener('scroll', trackActivity);
 
-// Also track activity on inputs and buttons
 document.addEventListener('input', trackActivity);
 document.addEventListener('change', trackActivity);
 
@@ -2418,13 +2826,11 @@ function renderCurrentMonth() {
         currentDisplayMonth = today.getMonth();
     }
     
-    // Get today's date
 const today = new Date();
 const todayYear = today.getFullYear();
 const todayMonth = today.getMonth();
 const todayDay = today.getDate();
 
-// Check if current displayed month/year matches today
 const isTodayMonth = (currentDisplayYear === todayYear && currentDisplayMonth === todayMonth);
 
     const key = getMonthKey(currentDisplayYear, currentDisplayMonth);
@@ -2453,7 +2859,6 @@ th1.style.background = '#2c3e50';
 th1.style.color = 'white';
 th1.style.minWidth = '70px';
 
-// Add blinking class if this is today's date
 if (isTodayMonth && day === todayDay) {
     th1.classList.add('today-date');
 }
@@ -2522,7 +2927,6 @@ input.value = value === 0 ? '' : value;
 input.step = row.step;
 input.min = 0;
 
-// Add this line to disable if date is locked:
 if (isDateLocked(currentDisplayYear, currentDisplayMonth, day)) {
     input.disabled = true;
     input.style.opacity = '0.6';
@@ -2588,7 +2992,6 @@ function addNewMonth() {
     const month = parseInt(document.getElementById('newMonth').value);
     const year = parseInt(document.getElementById('newYear').value);
     
-    // Prevent adding months that are in the past
     if (isDateLocked(year, month)) {
         showMonthLockedPopup(month, year);
         return;
@@ -2683,7 +3086,6 @@ function saveSelectedDates() {
     
     const { year, month } = nextMonthTarget;
     
-    // Check if this month is locked
     if (isDateLocked(year, month)) {
         showMonthLockedPopup(month, year);
         closeModal('addShiftModal');
@@ -3004,8 +3406,11 @@ if (data.extras) {
     
     monthsContainer.innerHTML = '';
     
-    const sortedKeys = Object.keys(monthlyData).sort().reverse();
-    
+const sortedKeys = Object.keys(monthlyData)
+    .filter(key => key.includes('-') && key !== 'expenses_list' && key !== 'expenses_tracker')
+    .sort()
+    .reverse();
+
     if (sortedKeys.length === 0) {
         monthsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">მონაცემები არ არის</div>';
         document.getElementById('otherMonthsModal').style.display = 'flex';
@@ -3143,15 +3548,12 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
         
-        // Check if this is the immediate previous month
         const isPreviousMonth = (year === currentYear && month === currentMonth - 1) || 
                                 (month === 11 && year === currentYear - 1 && currentMonth === 0);
         
-        // Current month - show "-"
         if (year === currentYear && month === currentMonth) {
             return `-`;
         }
-        // Previous month - show "მოლოდინში" if amount is 0
         else if (isPreviousMonth) {
             if (actualAmount === 0) {
                 return `მოლოდინში`;
@@ -3159,7 +3561,6 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
                 return `${actualAmount.toFixed(2)} ₾`;
             }
         }
-        // Past month older than previous month - show amount or 0
         else {
             if (actualAmount === 0) {
                 return `0.00 ₾`;
@@ -3177,15 +3578,12 @@ tableHtml += `<td style="text-align: center; padding: 8px;">${stationVal > 0 ? s
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
         
-        // Check if this is the immediate previous month
         const isPreviousMonth = (year === currentYear && month === currentMonth - 1) || 
                                 (month === 11 && year === currentYear - 1 && currentMonth === 0);
         
-        // Current month - don't show difference
         if (year === currentYear && month === currentMonth) {
             return `<span style="color: #95a5a6; font-weight: 800; font-size: 18px;">-</span>`;
         }
-        // Previous month - show difference only if actual amount is entered
         else if (isPreviousMonth) {
             if (actualAmount === 0) {
                 return `<span style="color: #95a5a6; font-weight: 800; font-size: 18px;">-</span>`;
@@ -3331,6 +3729,10 @@ function updateActualAmount(monthKey, amount) {
     
     if (monthlyData[monthKey]) {
         monthlyData[monthKey].actualAmount = parseFloat(amount) || 0;
+        
+        // დაამატე ეს ერთი ხაზი აქ:
+        monthlyData['expenses_tracker'] = 0; 
+        monthlyData.expenses_list = {};
         saveData();
         showOtherMonthsModal(); // Refresh the modal
         
