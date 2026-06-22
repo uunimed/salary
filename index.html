@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
@@ -842,13 +842,13 @@ tr:first-child td:not(.type-header) {
 
 /* შეცვალეთ ეს სტილი: */
 .shift-cell {
-    background-color: #48bb78 !important; /* უფრო ღია მწვანე */
+    background-color: #3b9d67 !important; /* ოდნავ უფრო მუქი, მშვიდი მწვანე */
     color: white !important;
     transition: all 0.15s ease;
 }
 
 .shift-cell:hover {
-    background-color: #38a169 !important; /* ჰოვერზე ოდნავ მუქი */
+    background-color: #2f855a !important; /* ჰოვერზე ოდნავ მუქი */
 }
 
 .popup-box {
@@ -1308,7 +1308,7 @@ thead tr:first-child th:first-child {
     background: white;
     padding: 40px;
     border-radius: 48px;
-    z-index: 4000;
+    z-index: 10001;
     width: 90%;
     max-width: 400px;
     text-align: center;
@@ -1318,10 +1318,37 @@ thead tr:first-child th:first-child {
 }
 
 .blur-background {
-    filter: blur(90px);
+    filter: blur(6px);
     pointer-events: none;
-    transition: filter 4.0s ease;
+    transition: filter 1.5s ease;
     user-select: none;
+}
+
+.pin-lock-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+    transition: none;
+}
+
+.pin-lock-overlay.is-active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity 1.5s ease, backdrop-filter 1.5s ease, -webkit-backdrop-filter 1.5s ease, visibility 0s;
+}
+
+body.pin-locked {
+    overflow: hidden;
 }
 
 .pin-popup h3 {
@@ -1388,14 +1415,16 @@ thead tr:first-child th:first-child {
 
 #expensesModal .modal-content {
     width: 100%;
-    height: 100%;
+    height: calc(100dvh - 0.4cm);
     max-width: none;
-    max-height: none;
+    max-height: calc(100vh - 0.4cm);
+    min-height: 0;
     margin: 0;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     padding: 20px;
+    overflow: hidden;
 }
 
 .expense-dashboard {
@@ -1421,9 +1450,29 @@ thead tr:first-child th:first-child {
     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* ხარჯების ცხრილის სიმაღლეში გაზრდა */
-#expensesModal > .modal-content > div:nth-child(3) {
-    min-height: 60vh;
+#expensesModal .modal-header,
+#expensesModal .expense-dashboard,
+#expensesModal .expenses-summary {
+    flex-shrink: 0;
+}
+
+.expenses-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.expenses-table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: white;
+    border: 1px solid #e2edf2;
+    border-radius: 15px;
+    margin-bottom: 15px;
 }
 
 /* თარიღის სვეტის გაყინვა სქროლვისას */
@@ -1444,6 +1493,45 @@ thead tr:first-child th:first-child {
     border-right: 2px solid #e2edf2; /* ვიზუალური საზღვარი სქროლვისთვის */
 }
 
+#expensesModal .expenses-table-scroll table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+#expensesModal .expenses-table-scroll th:first-child,
+#expensesModal .expenses-table-scroll td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    min-width: 155px;
+}
+
+#expensesModal .expenses-table-scroll thead th:first-child {
+    z-index: 30 !important;
+    background: #e9f0f5 !important;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.08);
+}
+
+#expensesModal .expenses-table-scroll tbody td:first-child {
+    z-index: 20 !important;
+    background: white !important;
+    border-right: 2px solid #e2edf2;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+#expensesModal .expenses-table-scroll thead {
+    position: static !important;
+}
+
+#expensesModal .expenses-table-scroll thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 25 !important;
+    background: #e9f0f5 !important;
+}
+
+#expensesTableBody tr.reserved-expense td {
+    background: #cbd5e1 !important;
+}
 
     </style>
 </head>
@@ -1679,15 +1767,11 @@ thead tr:first-child th:first-child {
             </div>
         </div>
 
-        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="expenses-body">
             <div style="background: #f8fafc; padding: 15px; border-radius: 20px; border: 1px solid #e2edf2; margin-bottom: 15px; flex-shrink: 0;">
                 <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 14px;">ხარჯის დამატება</h4>
 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    <input type="number" id="newExpenseAmount" placeholder="თანხა (₾)" style="flex: 1; min-width: 100px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
-
-<!-- ეს არის სუფთა და სწორი ვერსია -->
-<div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    <input type="datetime-local" id="newExpenseDate" style="flex: 1; min-width: 140px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 14px;">
+    <input type="datetime-local" id="newExpenseDate" step="1" style="flex: 1; min-width: 140px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 14px;">
     <input type="number" id="newExpenseAmount" placeholder="თანხა (₾)" style="flex: 1; min-width: 100px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
     <input type="text" id="newExpenseDesc" placeholder="აღწერა (სურვილისამებრ)" style="flex: 2; min-width: 140px; padding: 10px 15px; border-radius: 10px; border: 2px solid #e2e8f0; font-size: 15px;">
     <button onclick="addExpense()" style="background: #27ae60; color: white; border: none; padding: 0 20px; border-radius: 10px; font-weight: bold; cursor: pointer; min-height: 44px;"><i class="fas fa-plus"></i></button>
@@ -1696,9 +1780,12 @@ thead tr:first-child th:first-child {
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; flex-wrap: wrap; gap: 10px;">
                 <span style="font-weight: bold; color: #4a5568; font-size: 14px;">ჯამური: <span id="expTotalSpent" style="color: #e74c3c;">0.00 ₾</span></span>
+                <button onclick="printExpensesTable()" title="ხარჯების ცხრილის ბეჭდვა" style="background: #1f6e8c; color: white; border: none; padding: 9px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-print"></i> ბეჭდვა
+                </button>
             </div>
 
-            <div style="overflow-x: auto; background: white; border-radius: 15px; border: 1px solid #e2edf2; flex: 1; overflow-y: auto; margin-bottom: 15px;">
+            <div class="expenses-table-scroll">
                 <table style="width: 100%; border-collapse: collapse; min-width: 450px; font-size: 13px;">
                     <thead style="background: #e9f0f5; position: sticky; top: 0; z-index: 10;">
                         <tr>
@@ -1711,8 +1798,8 @@ thead tr:first-child th:first-child {
                             <th onclick="sortExpenses('amount')" style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
                                 თანხა <i class="fas fa-sort" id="sortIcon_amount" style="margin-left: 5px; color: #a0aec0;"></i>
                             </th>
-                            <th onclick="sortExpenses('balanceAfter')" style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; user-select: none;">
-                                ნაშთი <i class="fas fa-sort" id="sortIcon_balanceAfter" style="margin-left: 5px; color: #a0aec0;"></i>
+                            <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1; font-weight: 700; cursor: default; user-select: none;">
+                                ნაშთი
                             </th>
                             <th style="padding: 10px 15px; text-align: center; border-bottom: 2px solid #cbd5e1;"></th>
                         </tr>
@@ -1731,6 +1818,7 @@ thead tr:first-child th:first-child {
 
 <div class="toast-container" id="toastContainer"></div>
 
+<div class="pin-lock-overlay" id="pinLockOverlay" aria-hidden="true"></div>
 <div class="pin-popup" id="pinPopup">
     <h3><i class="fas fa-lock"></i> ShogiCalc</h3>
     <p style="margin-bottom: 20px; color: #666;">შეიტანეთ PIN კოდი</p>
@@ -1894,10 +1982,105 @@ function openExpensesModal() {
     renderExpensesList();
 }
 
+function printExpensesTable() {
+    document.querySelector('.expenses-print-container')?.remove();
+
+    const lastSalary = getLastActualSalary();
+    const daysLeft = getDaysUntilSalary();
+    const initialDailyLimit = daysLeft > 0 ? lastSalary / daysLeft : 0;
+    const escapeHtml = (value) => String(value ?? '-').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+
+    const chronologicalExpenses = Object.keys(monthlyData.expenses_list || {})
+        .map(id => ({ id, ...monthlyData.expenses_list[id] }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+    let runningBalance = lastSalary;
+    chronologicalExpenses.forEach(expense => {
+        runningBalance -= Number(expense.amount) || 0;
+        expense.balanceAfter = runningBalance;
+    });
+
+    const rows = [...chronologicalExpenses]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .map(expense => {
+            const date = new Date(expense.timestamp);
+            const dateLabel = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)}, ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+            return `<tr>
+                <td>${dateLabel}</td>
+                <td>${escapeHtml(expense.desc)}</td>
+                <td>-${(Number(expense.amount) || 0).toFixed(2)} ₾</td>
+                <td>${expense.balanceAfter.toFixed(2)} ₾</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="4" class="empty-print-row">ხარჯები არ არის დამატებული</td></tr>';
+
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-container expenses-print-container';
+    printContainer.innerHTML = `
+        <h1>ხარჯების ანგარიში</h1>
+        <div class="print-summary">
+            <div><span>ამ თვეს ჩარიცხული ხელფასი</span><strong>${lastSalary.toFixed(2)} ₾</strong></div>
+            <div><span>ხელფასამდე დარჩენილი დღეები</span><strong>${daysLeft} დღე</strong></div>
+            <div><span>თავდაპირველი დღიური ლიმიტი</span><strong>${initialDailyLimit.toFixed(2)} ₾</strong></div>
+        </div>
+        <table>
+            <thead>
+                <tr><th>თარიღი</th><th>აღწერა</th><th>თანხა</th><th>ნაშთი</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+
+    const printStyle = document.createElement('style');
+    printStyle.textContent = `
+        @media print {
+            body * { visibility: hidden; }
+            .expenses-print-container, .expenses-print-container * { visibility: visible; }
+            .expenses-print-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                padding: 20px;
+                color: #1e2a3e;
+                background: white;
+            }
+            .expenses-print-container h1 { margin: 0 0 20px; color: #1f6e8c; text-align: center; }
+            .expenses-print-container .print-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+            .expenses-print-container .print-summary div { padding: 14px; border: 1px solid #dbe5ec; border-radius: 10px; text-align: center; }
+            .expenses-print-container .print-summary span { display: block; margin-bottom: 6px; font-size: 12px; color: #4a5568; }
+            .expenses-print-container .print-summary strong { font-size: 18px; color: #1f6e8c; }
+            .expenses-print-container table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            .expenses-print-container th { padding: 10px; color: white; background: #2c3e50; text-align: left; }
+            .expenses-print-container td { padding: 9px 10px; border-bottom: 1px solid #dbe5ec; }
+            .expenses-print-container th:nth-child(3), .expenses-print-container th:nth-child(4), .expenses-print-container td:nth-child(3), .expenses-print-container td:nth-child(4) { text-align: right; }
+            .expenses-print-container .empty-print-row { padding: 24px; color: #718096; text-align: center; }
+            @page { margin: 1cm; }
+        }
+    `;
+
+    printContainer.appendChild(printStyle);
+    document.body.appendChild(printContainer);
+
+    const cleanUpPrint = () => {
+        if (document.body.contains(printContainer)) printContainer.remove();
+    };
+
+    window.addEventListener('afterprint', cleanUpPrint, { once: true });
+    window.print();
+}
+
 let currentSortCol = 'timestamp';
 let currentSortAsc = false;
 
 function sortExpenses(column) {
+    if (column === 'balanceAfter') return;
+
     if (currentSortCol === column) {
         currentSortAsc = !currentSortAsc;
     } else {
@@ -1918,16 +2101,19 @@ function renderExpensesList() {
         });
     }
 
-    expArray.sort((a, b) => a.timestamp - b.timestamp);
+    const chronologicalExpenses = [...expArray].sort((a, b) => a.timestamp - b.timestamp);
 
     let runningBalance = lastSalary;
-    expArray.forEach(exp => {
+    chronologicalExpenses.forEach(exp => {
         totalSpent += exp.amount;
         runningBalance -= exp.amount;
         exp.balanceAfter = runningBalance;
     });
 
-    expArray.sort((a, b) => {
+    const activeExpenses = chronologicalExpenses.filter(exp => !exp.reserved);
+    const reservedExpenses = chronologicalExpenses.filter(exp => exp.reserved);
+
+    activeExpenses.sort((a, b) => {
         let valA = a[currentSortCol];
         let valB = b[currentSortCol];
         
@@ -1938,11 +2124,13 @@ function renderExpensesList() {
             if (valA > valB) return currentSortAsc ? 1 : -1;
             return 0;
         }
-        
+
         return currentSortAsc ? (valA - valB) : (valB - valA);
     });
 
-    ['timestamp', 'desc', 'amount', 'balanceAfter'].forEach(col => {
+    expArray = [...activeExpenses, ...reservedExpenses];
+
+    ['timestamp', 'desc', 'amount'].forEach(col => {
         const icon = document.getElementById('sortIcon_' + col);
         if (icon) {
             if (currentSortCol === col) {
@@ -1989,9 +2177,10 @@ const dailyLimitEl = document.getElementById('expDailyLimit');
     } else {
         expArray.forEach(exp => {
             const tr = document.createElement('tr');
+            tr.className = exp.reserved ? 'reserved-expense' : '';
             
             const dateObj = new Date(exp.timestamp);
-            const dateStr = `${dateObj.getDate().toString().padStart(2,'0')}.${(dateObj.getMonth()+1).toString().padStart(2,'0')} - ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
+            const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getFullYear().toString().slice(-2)}, ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`;
 
             tr.innerHTML = `
                 <td style="padding: 12px 15px; border-bottom: 1px solid #f1f5f9; color: #4a5568;">${dateStr}</td>
@@ -1999,6 +2188,12 @@ const dailyLimitEl = document.getElementById('expDailyLimit');
                 <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; color: #e74c3c; font-weight: 800;">-${exp.amount.toFixed(2)}</td>
                 <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 800; color: ${exp.balanceAfter < 0 ? '#e74c3c' : '#27ae60'}">${exp.balanceAfter.toFixed(2)}</td>
                 <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                    <button onclick="setExpenseReserved('${exp.id}', true)" ${exp.reserved ? 'disabled' : ''} title="დარეზერვება" style="background: rgba(245, 158, 11, 0.12); border: none; color: #b45309; cursor: ${exp.reserved ? 'default' : 'pointer'}; padding: 6px 10px; border-radius: 6px; transition: 0.2s; opacity: ${exp.reserved ? '0.35' : '1'};" onmouseover="if (!this.disabled) this.style.background='rgba(245, 158, 11, 0.24)'" onmouseout="if (!this.disabled) this.style.background='rgba(245, 158, 11, 0.12)'">
+                        <i class="fas fa-bookmark"></i>
+                    </button>
+                    <button onclick="setExpenseReserved('${exp.id}', false)" ${exp.reserved ? '' : 'disabled'} title="გააქტიურება" style="background: rgba(39, 174, 96, 0.12); border: none; color: #1e8449; cursor: ${exp.reserved ? 'pointer' : 'default'}; padding: 6px 10px; border-radius: 6px; transition: 0.2s; opacity: ${exp.reserved ? '1' : '0.35'};" onmouseover="if (!this.disabled) this.style.background='rgba(39, 174, 96, 0.24)'" onmouseout="if (!this.disabled) this.style.background='rgba(39, 174, 96, 0.12)'">
+                        <i class="fas fa-check-circle"></i>
+                    </button>
                     <button onclick="deleteExpense('${exp.id}')" style="background: rgba(231, 76, 60, 0.1); border: none; color: #e74c3c; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: 0.2s;" onmouseover="this.style.background='rgba(231, 76, 60, 0.2)'" onmouseout="this.style.background='rgba(231, 76, 60, 0.1)'">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -2035,7 +2230,8 @@ function addExpense() {
     monthlyData.expenses_list[expenseId] = {
         amount: amount,
         desc: desc,
-        timestamp: timestamp
+        timestamp: timestamp,
+        reserved: false
     };
 
     saveData();
@@ -2045,6 +2241,15 @@ function addExpense() {
     
     showToast("ხარჯი დაემატა!", "success");
     renderExpensesList();
+}
+
+function setExpenseReserved(id, reserved) {
+    if (!monthlyData.expenses_list || !monthlyData.expenses_list[id]) return;
+
+    monthlyData.expenses_list[id].reserved = reserved;
+    saveData();
+    renderExpensesList();
+    showToast(reserved ? 'ხარჯი დარეზერვდა და სიის ბოლოში გადავიდა' : 'ხარჯი გააქტიურდა და სორტირებაში დაბრუნდა', 'success');
 }
 
 function deleteExpense(id) {
@@ -2745,6 +2950,11 @@ function showPinPopup() {
     
     const mainApp = document.getElementById('mainApp');
     mainApp.classList.add('blur-background');
+
+    const pinLockOverlay = document.getElementById('pinLockOverlay');
+    pinLockOverlay.classList.add('is-active');
+    pinLockOverlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('pin-locked');
     
     const pinPopup = document.getElementById('pinPopup');
     pinPopup.style.display = 'block';
@@ -2778,6 +2988,11 @@ function showPinPopup() {
 function hidePinPopup() {
     const mainApp = document.getElementById('mainApp');
     mainApp.classList.remove('blur-background');
+
+    const pinLockOverlay = document.getElementById('pinLockOverlay');
+    pinLockOverlay.classList.remove('is-active');
+    pinLockOverlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('pin-locked');
     
     const pinPopup = document.getElementById('pinPopup');
     pinPopup.style.display = 'none';
@@ -3408,8 +3623,11 @@ if (data.extras) {
     
 const sortedKeys = Object.keys(monthlyData)
     .filter(key => key.includes('-') && key !== 'expenses_list' && key !== 'expenses_tracker')
-    .sort()
-    .reverse();
+    .sort((a, b) => {
+        const [yearA, monthA] = a.split('-').map(Number);
+        const [yearB, monthB] = b.split('-').map(Number);
+        return (yearB - yearA) || (monthB - monthA);
+    });
 
     if (sortedKeys.length === 0) {
         monthsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">მონაცემები არ არის</div>';
@@ -3964,3 +4182,4 @@ window.onload = function() {
 
 </body>
 </html>
+
